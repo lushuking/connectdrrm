@@ -1,0 +1,57 @@
+/* ==============================
+   Settings Page Styles
+   ============================== */
+
+.settings-page {
+    padding: 24px;
+    max-width: 1200px;
+}
+
+.settings-header h3 {
+    font-size: 1.6rem;
+}
+
+/* Card tweaks */
+.settings-page .card {
+    transition: box-shadow 0.2s ease;
+}
+
+.settings-page .card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.09) !important;
+}
+
+/* Avatar initials circle */
+#settingsAvatarInitials {
+    user-select: none;
+}
+
+/* Progress bar for password strength */
+.progress {
+    background-color: #e9ecef;
+}
+
+/* Input group icon alignment */
+.settings-page .input-group-text {
+    border-right: none;
+}
+
+.settings-page .form-control {
+    border-left: none;
+}
+
+.settings-page .form-control:focus {
+    box-shadow: none;
+    border-color: #ced4da;
+}
+
+.settings-page .input-group:focus-within .input-group-text,
+.settings-page .input-group:focus-within .form-control,
+.settings-page .input-group:focus-within .btn-outline-secondary {
+    border-color: #0d6efd;
+}
+
+/* Bordered info cards */
+.settings-page [style*="border-left: 4px solid"] {
+    border-left-width: 4px !important;
+    border-left-style: solid !important;
+}

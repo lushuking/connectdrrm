@@ -1,0 +1,1002 @@
+/* User Management Page Styles */
+.user-management-page {
+    padding: 20px;
+    background: var(--bg-secondary, #f8f9fa);
+    min-height: 100vh;
+}
+
+/* Tab Navigation Styling - Inspired by Requests Page */
+.nav-tabs {
+    border-bottom: 2px solid #e9ecef;
+    margin-bottom: 25px;
+    background: transparent;
+}
+
+.nav-tabs .nav-item {
+    margin-bottom: -2px;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6c757d;
+    font-weight: 500;
+    padding: 12px 24px;
+    transition: all 0.3s ease;
+    background: transparent;
+    position: relative;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: transparent;
+    border-bottom-color: #007bff;
+    color: #007bff;
+    background: transparent;
+}
+
+.nav-tabs .nav-link.active {
+    color: #007bff;
+    background-color: transparent;
+    border-color: transparent;
+    border-bottom-color: #007bff;
+    font-weight: 600;
+}
+
+.nav-tabs .nav-link i {
+    font-size: 16px;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+/* Tab Content - Ensure proper display */
+.tab-content {
+    position: relative;
+    min-height: 400px;
+}
+
+.tab-content .tab-pane {
+    display: none !important;
+    animation: fadeIn 0.3s ease;
+}
+
+.tab-content .tab-pane.active {
+    display: block !important;
+}
+
+.tab-content .tab-pane.show {
+    display: block !important;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Card Styling */
+.card {
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.card-body {
+    padding: 25px;
+}
+
+/* Create Account Form Styling */
+#create-account .card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+#create-account .card-body {
+    padding: 40px;
+}
+
+#create-account .form-label {
+    font-weight: 600;
+    color: #2b2f4a;
+    margin-bottom: 10px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#create-account .form-label .text-danger {
+    color: #dc3545;
+    font-size: 16px;
+    line-height: 1;
+}
+
+#create-account .mb-3 {
+    margin-bottom: 25px !important;
+}
+
+#create-account .form-control,
+#create-account .form-select {
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    background: #ffffff;
+    color: #2b2f4a;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+#create-account .form-control:hover,
+#create-account .form-select:hover {
+    border-color: #cbd5e0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+}
+
+#create-account .form-control:focus,
+#create-account .form-select:focus {
+    outline: none;
+    border-color: #007bff;
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.1), 0 4px 12px rgba(0, 123, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+#create-account .form-control::placeholder {
+    color: #a0aec0;
+    font-weight: 400;
+}
+
+/* Select Wrapper - Better approach to prevent arrows in dropdown */
+#create-account .select-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+#create-account .select-wrapper::after {
+    content: '';
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23495057' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-size: contain;
+    pointer-events: none;
+    z-index: 1;
+}
+
+#create-account .select-wrapper:focus-within::after {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23007bff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
+#create-account .form-select {
+    background: #ffffff !important;
+    background-image: none !important;
+    padding-right: 45px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+    width: 100%;
+}
+
+/* Critical: Remove background image when dropdown is open */
+#create-account .form-select:focus {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23007bff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    outline: none;
+}
+
+/* Fix dropdown options styling - prevent arrows in dropdown list */
+#create-account .form-select option {
+    background: white !important;
+    background-image: none !important;
+    background-color: white !important;
+    color: #2b2f4a !important;
+    padding: 12px 14px !important;
+    border: none !important;
+    font-size: 15px !important;
+    font-weight: normal !important;
+    /* Critical: Remove any inherited background images */
+    background-repeat: no-repeat !important;
+    background-position: initial !important;
+    background-size: initial !important;
+}
+
+/* Disabled option styling */
+#create-account .form-select option:disabled {
+    background-color: #f8f9fa !important;
+    color: #6c757d !important;
+    font-style: italic !important;
+    cursor: not-allowed !important;
+    opacity: 0.7 !important;
+}
+
+/* Remove any browser default styling that might cause arrows */
+#create-account .form-select::-ms-expand {
+    display: none !important;
+}
+
+#create-account .form-select::-webkit-appearance {
+    -webkit-appearance: none !important;
+}
+
+/* Ensure dropdown list doesn't show arrows - important for all browsers */
+#create-account select.form-select option {
+    background-image: none !important;
+    background: white !important;
+    list-style: none !important;
+}
+
+/* Prevent arrows in the dropdown when it's open - override all possible states */
+#create-account .form-select:focus option,
+#create-account .form-select:active option,
+#create-account .form-select option:checked,
+#create-account .form-select option:hover,
+#create-account .form-select option:focus {
+    background-image: none !important;
+    background: #f8f9fa !important;
+    background-color: #f8f9fa !important;
+}
+
+/* Additional fix for Chrome/Edge - remove pseudo-elements */
+#create-account .form-select option::before,
+#create-account .form-select option::after {
+    content: none !important;
+    display: none !important;
+    background-image: none !important;
+}
+
+/* Prevent any icon/arrow inheritance in dropdown */
+#create-account .form-select optgroup,
+#create-account .form-select optgroup option {
+    background-image: none !important;
+    background: white !important;
+}
+
+#create-account .form-text {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+}
+
+#create-account .form-text::before {
+    content: "ℹ";
+    font-size: 14px;
+    color: #007bff;
+}
+
+/* Form Section Header */
+#create-account .form-section-header {
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+#create-account .form-section-header h4 {
+    color: #2b2f4a;
+    font-weight: 600;
+    font-size: 18px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#create-account .form-section-header h4 i {
+    color: #007bff;
+    font-size: 20px;
+}
+
+/* Form Row Styling */
+#create-account .row {
+    margin-left: -10px;
+    margin-right: -10px;
+}
+
+#create-account .row > [class*="col-"] {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+/* Input Group Enhancements */
+#create-account .input-group-wrapper {
+    position: relative;
+}
+
+#create-account .form-label i {
+    color: #007bff;
+    font-size: 16px;
+    margin-right: 6px;
+}
+
+#create-account .form-control.has-icon {
+    padding-left: 45px;
+    position: relative;
+}
+
+#create-account .form-control.has-icon::before {
+    content: '';
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Email icon */
+#create-account #userEmail.has-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236c757d'%3E%3Cpath d='M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: left 16px center;
+    background-size: 18px;
+}
+
+#create-account #userEmail.has-icon:focus {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23007bff'%3E%3Cpath d='M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z'/%3E%3C/svg%3E");
+}
+
+/* Password icon */
+#create-account #userPassword.has-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236c757d'%3E%3Cpath d='M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: left 16px center;
+    background-size: 18px;
+}
+
+#create-account #userPassword.has-icon:focus {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23007bff'%3E%3Cpath d='M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z'/%3E%3C/svg%3E");
+}
+
+/* Form Actions */
+#create-account .form-actions {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 2px solid #e9ecef;
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+}
+
+#create-account .form-actions .btn {
+    min-width: 140px;
+    padding: 14px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+#create-account .form-actions .btn i {
+    font-size: 16px;
+}
+
+/* Success Message Styling */
+#create-account .alert-success {
+    border-radius: 10px;
+    border-left: 4px solid #10b981;
+    padding: 16px 20px;
+    margin-bottom: 25px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+}
+
+/* Error Message Styling */
+#create-account .alert-danger {
+    border-radius: 10px;
+    border-left: 4px solid #dc3545;
+    padding: 16px 20px;
+    margin-bottom: 25px;
+    background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.15);
+}
+
+/* Responsive Form Styling */
+@media (max-width: 768px) {
+    #create-account .card-body {
+        padding: 25px;
+    }
+    
+    #create-account .form-actions {
+        flex-direction: column;
+    }
+    
+    #create-account .form-actions .btn {
+        width: 100%;
+    }
+}
+
+/* Button Styling */
+.btn {
+    padding: 12px 24px;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    border: none;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 123, 255, 0.4);
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.btn i {
+    margin-right: 6px;
+}
+
+/* Municipality Cards Grid — Premium Design */
+#municipalitiesGrid {
+    margin-top: 20px;
+}
+
+.muni-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    transition: transform 0.22s, box-shadow 0.22s;
+    display: flex;
+    flex-direction: column;
+}
+
+.muni-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 28px rgba(26,61,99,0.13);
+}
+
+/* Card top header area */
+.muni-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, #f0f7ff 0%, #e8f2fb 100%);
+    border-bottom: 1px solid #dbeafe;
+}
+
+.muni-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1A3D63, #2d6a9f);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(26,61,99,0.15);
+}
+
+.muni-header-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.muni-name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.muni-type {
+    font-size: 0.72rem;
+    color: #64748b;
+    margin-top: 1px;
+}
+
+.muni-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Stats row */
+.muni-stats {
+    display: flex;
+    align-items: center;
+    padding: 0.875rem 1.25rem;
+    flex: 1;
+}
+
+.muni-stat {
+    flex: 1;
+    text-align: center;
+}
+
+.muni-stat-value {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #1A3D63;
+    line-height: 1;
+}
+
+.muni-stat-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+    margin-top: 3px;
+}
+
+.muni-stat-divider {
+    width: 1px;
+    height: 32px;
+    background: #e2e8f0;
+    flex-shrink: 0;
+}
+
+/* Footer with button */
+.muni-card-footer {
+    padding: 0.875rem 1.25rem;
+    border-top: 1px solid #f1f5f9;
+    background: #fafbfc;
+}
+
+.muni-view-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    background: linear-gradient(135deg, #1A3D63, #2d6a9f);
+    color: #fff;
+    border: none;
+    border-radius: 0.625rem;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.muni-view-btn:hover {
+    background: linear-gradient(135deg, #0f2640, #1A3D63);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(26,61,99,0.35);
+}
+
+.card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2b2f4a;
+    margin-bottom: 8px;
+}
+
+.card-body .text-muted {
+    font-size: 13px;
+    color: #6c757d;
+}
+
+/* Stats Display */
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+.badge {
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge.bg-success {
+    background-color: #10b981 !important;
+}
+
+.badge.bg-warning {
+    background-color: #f59e0b !important;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+/* Button Content */
+.btn-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-content .material-icons {
+    font-size: 18px;
+}
+
+/* Loading and Error States */
+#loadingState {
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #6c757d;
+}
+
+#errorState {
+    margin: 20px 0;
+    border-radius: 8px;
+    padding: 16px 20px;
+    border-left: 4px solid #dc3545;
+}
+
+#errorState i {
+    margin-right: 8px;
+}
+
+/* Pagination */
+.pagination {
+    margin-top: 30px;
+}
+
+.pagination .page-link {
+    color: #1A3D63;
+    border: 1px solid #e2e8f0;
+    padding: 10px 18px;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    margin: 0 3px;
+    font-weight: 500;
+}
+
+.pagination .page-link:hover {
+    background-color: #f0f7ff;
+    border-color: #1A3D63;
+    color: #1A3D63;
+    transform: translateY(-1px);
+}
+
+.pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #1A3D63 0%, #2d6a9f 100%);
+    border-color: #1A3D63;
+    color: white;
+    box-shadow: 0 4px 10px rgba(26, 61, 99, 0.2);
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #cbd5e0;
+    background-color: #f8fafc;
+    border-color: #e2e8f0;
+}
+
+/* Success Alert */
+.alert-success {
+    border-radius: 8px;
+    border-left: 4px solid #10b981;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.alert-success i {
+    margin-right: 8px;
+    color: #10b981;
+}
+
+
+
+/* Generated Credentials Styling */
+#generatedCredentials .alert-info {
+    background: linear-gradient(135deg, #e7f3ff 0%, #ffffff 100%);
+    border: 2px solid #007bff;
+    border-left: 4px solid #007bff;
+    border-radius: 12px;
+    padding: 25px;
+}
+
+#generatedCredentials .alert-heading {
+    color: #007bff;
+    font-weight: 600;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#generatedCredentials .input-group {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+#generatedCredentials .form-control[readonly] {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #2b2f4a;
+    font-family: 'Courier New', monospace;
+    cursor: text;
+    /* Prevent browser autofill indicators */
+    -webkit-autofill: none;
+    -webkit-box-shadow: 0 0 0 1000px #f8f9fa inset !important;
+    box-shadow: 0 0 0 1000px #f8f9fa inset !important;
+    /* Remove browser password manager icons */
+    background-image: none !important;
+}
+
+/* Hide browser autofill icons */
+#generatedCredentials input::-webkit-credentials-auto-fill-button {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    right: -9999px !important;
+}
+
+#generatedCredentials input::-webkit-contacts-auto-fill-button {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* Prevent LastPass and other password managers */
+#generatedCredentials input[data-lpignore="true"] {
+    background-image: none !important;
+}
+
+#generatedCredentials .btn-outline-secondary {
+    border-color: #dee2e6;
+    color: #6c757d;
+}
+
+#generatedCredentials .btn-outline-secondary:hover {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+#generatedCredentials .alert-warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffffff 100%);
+    border: 1px solid #ffc107;
+    border-left: 4px solid #ffc107;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-top: 15px;
+}
+
+#generatedCredentials .alert-warning i {
+    color: #ffc107;
+    margin-right: 8px;
+}
+
+/* Credentials Display in Success Alert */
+.credentials-display {
+    background: rgba(255, 255, 255, 0.5);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.credentials-display code {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: #2b2f4a;
+}
+
+.credentials-display .btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+/* Account Type Selection Cards */
+.account-type-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-top: 15px;
+}
+
+.account-type-card {
+    position: relative;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+    overflow: hidden;
+}
+
+.account-type-card:hover:not(.disabled) {
+    border-color: #007bff;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.account-type-card.selected {
+    border-color: #007bff;
+    background: linear-gradient(135deg, #e7f3ff 0%, #ffffff 100%);
+    box-shadow: 0 4px 16px rgba(0, 123, 255, 0.2);
+}
+
+.account-type-card.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f8f9fa;
+}
+
+.account-type-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.account-type-card label {
+    display: flex;
+    align-items: flex-start;
+    padding: 20px;
+    cursor: pointer;
+    margin: 0;
+    width: 100%;
+}
+
+.account-type-card.disabled label {
+    cursor: not-allowed;
+}
+
+.account-type-card .card-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    flex-shrink: 0;
+    color: white;
+    font-size: 24px;
+}
+
+.account-type-card[data-type="approving_authority"] .card-icon {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.account-type-card.disabled .card-icon {
+    background: #6c757d;
+}
+
+.account-type-card .card-content {
+    flex: 1;
+}
+
+.account-type-card .card-content h6 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #2b2f4a;
+}
+
+.account-type-card .card-content p {
+    margin: 0;
+    font-size: 13px;
+    color: #6c757d;
+    line-height: 1.5;
+}
+
+.account-type-card input[type="radio"]:checked + label {
+    font-weight: 600;
+}
+
+.account-type-card.selected .card-content h6 {
+    color: #007bff;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .user-management-page {
+        padding: 15px;
+    }
+    
+    .nav-tabs .nav-link {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+    
+    .card-body {
+        padding: 20px;
+    }
+    
+    #create-account .card-body {
+        padding: 25px;
+    }
+    
+    .form-control,
+    .form-select {
+        padding: 10px 14px;
+    }
+    
+    #generatedCredentials .alert-info {
+        padding: 20px;
+    }
+    
+    .account-type-cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Ensure no overlap issues */
+.tab-content {
+    clear: both;
+    overflow: visible;
+    position: relative;
+    min-height: 400px;
+    padding-top: 20px;
+}
+
+.tab-pane {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+}
+
+/* Fix for tab switching - prevent overlap */
+.tab-content > .tab-pane {
+    display: none;
+}
+
+.tab-content > .tab-pane.active,
+.tab-content > .tab-pane.show {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}

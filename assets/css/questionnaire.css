@@ -1,0 +1,137 @@
+:root {
+    --q-bg: #121212;
+    --q-card: #1e1e1e;
+    --q-border: #333;
+    --q-text-head: #ffffff;
+    --q-text-body: #b0b0b0;
+    --q-accent: #4A7FA7;
+    --q-accent-hover: #1A3D63;
+}
+
+.questionnaire-container {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 20px;
+    background: var(--q-bg);
+    color: var(--q-text-body);
+    font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.q-header {
+    margin-bottom: 30px;
+    border-bottom: 1px solid var(--q-border);
+    padding-bottom: 20px;
+}
+
+.q-header h1 {
+    color: var(--q-text-head);
+    font-size: 1.8rem;
+    margin-bottom: 5px;
+}
+
+.q-header p {
+    color: var(--q-accent);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.q-set {
+    margin-bottom: 50px;
+}
+
+.q-set-title {
+    background: #2a2a2a;
+    padding: 10px 15px;
+    border-radius: 4px 4px 0 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--q-text-head);
+    border: 1px solid var(--q-border);
+    border-bottom: none;
+}
+
+.q-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--q-border);
+    background: var(--q-card);
+}
+
+.q-table th, .q-table td {
+    border: 1px solid var(--q-border);
+    padding: 15px;
+    text-align: left;
+}
+
+.q-table th {
+    background: #222;
+    color: var(--q-text-head);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.q-table td.rating-cell {
+    width: 50px;
+    text-align: center;
+    font-weight: bold;
+    color: var(--q-text-head);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.q-table td.rating-cell:hover {
+    background: rgba(74, 127, 167, 0.2);
+}
+
+.q-table td.rating-cell.selected {
+    background: var(--q-accent);
+    color: white;
+}
+
+.q-table .item-title {
+    color: var(--q-text-head);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.q-table .item-desc {
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.q-footer {
+    margin-top: 30px;
+    text-align: right;
+}
+
+.btn-submit {
+    background: var(--q-accent);
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-submit:hover {
+    background: var(--q-accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.q-set {
+    animation: fadeIn 0.5s ease forwards;
+}

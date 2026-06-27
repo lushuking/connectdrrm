@@ -1,0 +1,23 @@
+# IDEs and editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# Log files
+*.log
+jmeter.log
+
+# Temporary and upload files
+temp/
+uploads/*
+!uploads/.gitkeep

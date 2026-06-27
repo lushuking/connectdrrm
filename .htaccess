@@ -1,0 +1,15 @@
+# Disable directory listing
+Options -Indexes
+
+# Prevent access to dot files (like .env, .git)
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Protect sensitive directories and prevent execution of PHP files in uploads
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(database|scripts)/ - [F,L]
+    RewriteRule ^config/db\.php$ - [F,L]
+    RewriteRule ^uploads/.*\.php$ - [F,L]
+</IfModule>

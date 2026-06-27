@@ -1,0 +1,895 @@
+/* Resources Page Styles */
+.resources-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    min-height: 100vh;
+    padding: 0;
+}
+
+
+/* Override main content padding for resources page */
+.resources-page .main-content {
+    padding: 0 !important;
+}
+
+/* Page Section Header */
+.page-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xl);
+    gap: var(--spacing-lg);
+    min-height: 80px;
+}
+
+.section-title h2 {
+    margin: 0 0 var(--spacing-xs) 0;
+    font-size: 1.75rem;
+    color: var(--text-primary);
+}
+
+.section-title p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.section-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+/* Search Box */
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-box .material-icons {
+    position: absolute;
+    left: var(--spacing-sm);
+    color: var(--text-muted);
+    font-size: 20px;
+}
+
+.search-box input {
+    padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) 40px;
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    font-size: 0.9rem;
+    min-width: 250px;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Compact search box for municipality overview */
+.page-section-header .search-box {
+    height: 36px;
+}
+
+.page-section-header .search-box input {
+    height: 36px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+}
+
+/* Style the top municipality search to match table search bar */
+.page-section-header .input-group {
+    border-radius: var(--radius-md) !important;
+    border: 1px solid var(--border-medium) !important;
+    overflow: hidden !important;
+    height: 36px !important;
+    max-width: 300px !important;
+    box-sizing: border-box !important;
+}
+
+.page-section-header .input-group-text {
+    background: var(--bg-primary) !important;
+    border: none !important;
+    color: var(--text-muted) !important;
+    padding: 6px 8px !important;
+    height: 34px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    min-width: auto !important;
+}
+
+.page-section-header .input-group-text .material-icons {
+    font-size: 18px !important;
+    line-height: 1 !important;
+}
+
+.page-section-header .input-group #municipalitySearch,
+.page-section-header .input-group input.form-control {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 6px 12px !important;
+    font-size: 0.9rem !important;
+    background: var(--bg-primary) !important;
+    height: 34px !important;
+    line-height: 1.2 !important;
+    box-sizing: border-box !important;
+}
+
+.page-section-header .input-group input:focus,
+.page-section-header .input-group #municipalitySearch:focus {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: var(--bg-primary) !important;
+}
+
+/* Force override Bootstrap's default form-control heights */
+.page-section-header .form-control {
+    min-height: 34px !important;
+    height: 34px !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+}
+
+/* Additional override for any remaining Bootstrap defaults */
+.page-section-header .input-group .form-control,
+.page-section-header .input-group .form-control:first-child,
+.page-section-header .input-group .form-control:last-child {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-left: 0 !important;
+    border-right: 0 !important;
+}
+
+/* Resources Summary */
+.resources-summary {
+    margin-bottom: var(--spacing-xl);
+}
+
+.summary-card {
+    background: var(--bg-primary);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    border-left: 4px solid var(--primary-color);
+    min-width: 200px;
+    flex-shrink: 0;
+}
+
+.summary-content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.summary-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.summary-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    min-width: 60px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    transition: none !important;
+}
+
+/* Removed summary-icon styles for horizontal layout */
+
+/* Municipalities Section */
+.municipalities-section {
+    margin-bottom: var(--spacing-xl);
+}
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+    width: auto;
+}
+
+.dropdown-container::after {
+    content: '▼';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.view-select-as-title {
+    appearance: none !important;
+    border: none !important;
+    background: transparent !important;
+    padding: 0 24px 0 0 !important;
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+    box-shadow: none !important;
+    width: auto !important;
+    min-width: 200px;
+}
+
+.view-select-as-title:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+
+.section-subtitle {
+    margin: 0 0 var(--spacing-lg) 0;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.municipalities-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    padding: var(--spacing-md);
+}
+
+/* Enhanced Municipality Card Styles */
+.municipalities-grid .card {
+    height: auto;
+    min-height: auto;
+    overflow: visible !important;
+    border: 2px solid var(--border-medium);
+    border-radius: var(--radius-lg);
+    background: var(--bg-primary);
+    transition: all var(--transition-medium);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Center contents for only `.btn btn-primary w-100` buttons on the resources page */
+.resources-page .card .btn.btn-primary.w-100 {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    gap: 8px !important;
+    height: 44px !important;
+}
+
+.resources-page .card .btn.btn-primary.w-100 .material-icons {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+    vertical-align: middle !important;
+}
+
+.resources-page .card .btn.btn-primary.w-100 .btn-text {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 14px !important;
+    line-height: 1 !important;
+    vertical-align: middle !important;
+}
+
+.municipalities-grid .card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
+    transform: translateY(-2px);
+}
+
+.municipalities-grid .card-body {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: var(--spacing-lg);
+}
+
+/* Stats boxes with better outlines */
+.municipalities-grid .bg-light {
+    background-color: rgba(102, 126, 234, 0.05) !important;
+    border: 1px solid rgba(102, 126, 234, 0.1) !important;
+}
+
+.municipalities-grid .bg-light:hover {
+    background-color: rgba(102, 126, 234, 0.1) !important;
+    border-color: rgba(102, 126, 234, 0.2) !important;
+}
+
+/* Button styling - Perfect centering with maximum specificity */
+.municipalities-grid .card .btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), #667eea) !important;
+    border: none !important;
+    border-radius: var(--radius-md) !important;
+    font-weight: 500 !important;
+    transition: all var(--transition-medium) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    width: 100% !important;
+    padding: 12px 16px !important;
+    height: 44px !important;
+    gap: 0 !important;
+}
+
+.municipalities-grid .card .btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary-dark), #5a67d8) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+}
+
+.municipalities-grid .card .btn-content {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.municipalities-grid .card .btn-primary .material-icons {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+    vertical-align: middle !important;
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+.municipalities-grid .card .btn-text {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 14px !important;
+    line-height: 1 !important;
+    vertical-align: middle !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+}
+
+.municipality-header {
+    padding: var(--spacing-lg);
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.municipality-name {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+}
+
+.municipality-name .material-icons {
+    color: var(--danger-color);
+    font-size: 18px;
+}
+
+.municipality-name h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.municipality-meta {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.municipality-stats {
+    padding: var(--spacing-lg);
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.stat-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.municipality-actions {
+    padding: var(--spacing-lg);
+    background: var(--bg-tertiary);
+    border-top: 1px solid var(--border-light);
+}
+
+.view-resources-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color var(--transition-medium);
+}
+
+.view-resources-btn:hover {
+    background: var(--primary-dark);
+}
+
+/* Resources Detail View */
+.resources-detail {
+    /* Removed slideIn animation to prevent twitching - no styles needed */
+    display: block;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-xl);
+    gap: var(--spacing-lg);
+}
+
+.detail-header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.back-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.detail-title h2 {
+    margin: 0 0 var(--spacing-xs) 0;
+    font-size: 1.5rem;
+}
+
+.detail-title p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.detail-header-right {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+/* Resources Controls */
+.resources-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    gap: var(--spacing-lg);
+}
+
+.controls-left {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.controls-right {
+    display: flex !important;
+    gap: var(--spacing-md);
+    align-items: center;
+}
+
+.controls-right .filter-group {
+    flex-direction: row;
+    margin-bottom: 0;
+}
+
+.filter-select {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    font-size: 0.9rem;
+    min-width: 150px;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+/* Resources Table */
+.table-responsive {
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.resources-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+}
+
+.resources-table th {
+    background: #4facfe;
+    padding: var(--spacing-md) var(--spacing-lg);
+    text-align: center !important;
+    font-weight: 600;
+    color: white;
+    border-bottom: 2px solid #0ea5e9;
+    vertical-align: middle !important;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.resources-table td {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-secondary);
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+/* Bootstrap table hover is handled by .table-hover class */
+
+.resources-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.actions-column {
+    width: 120px;
+    text-align: center;
+}
+
+/* Bootstrap button group styling for actions */
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    border-radius: 0.25rem;
+}
+
+.btn-group-sm .btn:not(:last-child) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.btn-group-sm .btn:not(:first-child) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.resource-actions {
+    display: flex;
+    gap: var(--spacing-xs);
+    justify-content: center;
+}
+
+.action-btn-sm {
+    padding: var(--spacing-xs);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn-sm .material-icons {
+    font-size: 16px;
+}
+
+.action-btn-sm.edit {
+    background: rgba(23, 162, 184, 0.1);
+    color: var(--info-color);
+}
+
+.action-btn-sm.edit:hover {
+    background: var(--info-color);
+    color: white;
+}
+
+.action-btn-sm.delete {
+    background: rgba(220, 53, 69, 0.1);
+    color: var(--danger-color);
+}
+
+.action-btn-sm.delete:hover {
+    background: var(--danger-color);
+    color: white;
+}
+
+/* Status Badges */
+.status-badge {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-available { background: rgba(40, 167, 69, 0.12); color: #198754; }
+.badge-low { background: rgba(255, 193, 7, 0.15); color: #b08900; }
+.badge-out { background: rgba(220, 53, 69, 0.12); color: #c53030; }
+
+.status-available {
+    background: rgba(40, 167, 69, 0.1);
+    color: var(--success-color);
+}
+
+.status-low {
+    background: rgba(255, 193, 7, 0.1);
+    color: var(--warning-color);
+}
+
+.status-out {
+    background: rgba(220, 53, 69, 0.1);
+    color: var(--danger-color);
+}
+
+/* Modal Styles - Using Global Modal Component */
+
+/* Form Styles - Using Global Modal Component */
+
+/* Loading states */
+.loading-row {
+    text-align: center;
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-row .loading {
+    padding: var(--spacing-xl);
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .municipalities-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: var(--spacing-md);
+    }
+    
+    .resources-header-compact {
+        gap: var(--spacing-md);
+    }
+    
+    .header-controls .search-box {
+        max-width: 250px;
+    }
+    
+    .resources-page .main-content {
+        padding: var(--spacing-lg);
+    }
+}
+
+@media (max-width: 768px) {
+    .resources-page .main-content {
+        padding: var(--spacing-md);
+    }
+    
+    .resources-header-compact {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-md);
+    }
+    
+    .summary-card-compact {
+        align-self: flex-start;
+        min-width: auto;
+    }
+    
+    .header-controls {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        justify-content: stretch;
+    }
+    
+    .header-controls .search-box {
+        max-width: none;
+        width: 100%;
+    }
+    
+    .header-controls .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .municipalities-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .detail-header-right {
+        justify-content: flex-start;
+    }
+
+    .resources-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .controls-left {
+        flex-direction: column;
+    }
+
+    .resources-table-container {
+        overflow-x: auto;
+    }
+
+    .resources-table {
+        min-width: 700px;
+    }
+
+    .modal-content {
+        width: 95%;
+        margin: var(--spacing-md);
+    }
+}
+
+@media (max-width: 480px) {
+    .resources-header-compact {
+        gap: var(--spacing-sm);
+    }
+    
+    .summary-card-compact {
+        padding: var(--spacing-sm);
+        flex-direction: column;
+        text-align: center;
+        gap: var(--spacing-xs);
+    }
+    
+    .summary-card-compact .summary-number {
+        font-size: 1.3rem;
+    }
+    
+    .summary-card-compact .summary-icon {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .summary-card-compact .summary-icon .material-icons {
+        font-size: 18px;
+    }
+
+    .municipality-card {
+        margin: 0 var(--spacing-sm);
+    }
+
+    .detail-header-left {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-sm);
+    }
+
+    .dashboard-card .card-header {
+        padding: var(--spacing-sm);
+    }
+}
+
+/* Custom Header Action Buttons for Resource Detail view (white/transparent theme on blue gradient background) */
+.btn-detail-back {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    backdrop-filter: blur(4px);
+    transition: all 0.2s ease-in-out !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    padding: 6px 16px !important;
+}
+
+.btn-detail-back:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.btn-detail-export {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    backdrop-filter: blur(4px);
+    transition: all 0.2s ease-in-out !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    padding: 8px 18px !important;
+}
+
+.btn-detail-export:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.btn-detail-add {
+    background: #ffffff !important;
+    color: #1A3D63 !important;
+    border: 1px solid #ffffff !important;
+    transition: all 0.2s ease-in-out !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    padding: 8px 18px !important;
+    font-weight: 600 !important;
+}
+
+.btn-detail-add:hover {
+    background: #f8f9fa !important;
+    color: #0A1931 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Enhanced Modal Styles - Using Global Modal Component */
