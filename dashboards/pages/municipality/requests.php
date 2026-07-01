@@ -5107,17 +5107,11 @@ function openRequestDetailsById(rawId) {
         fetch(`${baseUrl}/config/get_request_details.php?requestId=${id}`, {
             credentials: 'same-origin'
         })
-            .then(r => r.text())
-            .then(text => {
-                let res;
-                try { res = JSON.parse(text); } catch(e) {
-                    console.error('Non-JSON response from server:', text);
-                    alert('Server returned an unexpected response. Check the browser console.');
-                    return;
-                }
+            .then(r => r.json())
+            .then(res => {
                 if (!res || !res.success || !res.data) {
                     console.error('Failed to fetch request details:', res);
-                    alert('Error: ' + (res?.error?.message || 'Could not load request details.'));
+                    if (typeof showNotification === 'function') showNotification('Could not load request details. Please try again.', 'error');
                     return;
                 }
                 const req = res.data;
@@ -5318,7 +5312,7 @@ function openRequestDetailsById(rawId) {
             })
             .catch(err => {
                 console.error('Fetch request details error:', err);
-                alert('Could not load request details. Please check your connection or try refreshing the page.');
+                if (typeof showNotification === 'function') showNotification('Could not load request details. Please refresh the page.', 'error');
             });
     } catch (e) { console.error('openRequestDetailsById error', e); }
 }
