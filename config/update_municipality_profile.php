@@ -42,6 +42,11 @@ try {
 	$operatorName = trim((string)($body['operatorName'] ?? ''));
 	$operatorTitle = trim((string)($body['operatorTitle'] ?? ''));
 	
+	$drrmoHeadSignature = $body['drrmoHeadSignature'] ?? null;
+	$operatorSignature = $body['operatorSignature'] ?? null;
+	$clearDrrmoHeadSignature = !empty($body['clearDrrmoHeadSignature']);
+	$clearOperatorSignature = !empty($body['clearOperatorSignature']);
+	
 	// Check user role - approving_authority can only edit head fields
 	$userRole = $_SESSION['user_type'] ?? '';
 	$isApprovingAuthority = ($userRole === 'approving_authority');
@@ -73,6 +78,37 @@ try {
 	} else {
 		$upd = $pdo->prepare('UPDATE drrmo SET drrmo_head = ?, drrmo_head_title = ?, operator_name = ?, operator_title = ? WHERE drrmoID = ?');
 		$upd->execute([$drrmoHead, $drrmoHeadTitle, $operatorName, $operatorTitle, $drrmoID]);
+	}
+
+	// Update signatures in users table
+	try {
+		$pdo->exec("ALTER TABLE users MODIFY COLUMN signature LONGTEXT NULL");
+	} catch (Exception $ignored) {}
+
+	if ($isApprovingAuthority) {
+		if ($clearDrrmoHeadSignature) {
+			$updSig = $pdo->prepare("UPDATE users SET signature = NULL WHERE userID = ?");
+			$updSig->execute([$_SESSION['user_id']]);
+		} elseif (!empty($drrmoHeadSignature)) {
+			$updSig = $pdo->prepare("UPDATE users SET signature = ? WHERE userID = ?");
+			$updSig->execute([$drrmoHeadSignature, $_SESSION['user_id']]);
+		}
+	} else {
+		if ($clearOperatorSignature) {
+			$updSig = $pdo->prepare("UPDATE users SET signature = NULL WHERE userID = ?");
+			$updSig->execute([$_SESSION['user_id']]);
+		} elseif (!empty($operatorSignature)) {
+			$updSig = $pdo->prepare("UPDATE users SET signature = ? WHERE userID = ?");
+			$updSig->execute([$operatorSignature, $_SESSION['user_id']]);
+		}
+
+		if ($clearDrrmoHeadSignature) {
+			$updHeadSig = $pdo->prepare("UPDATE users SET signature = NULL WHERE drrmoID = ? AND role = 'approving_authority'");
+			$updHeadSig->execute([$drrmoID]);
+		} elseif (!empty($drrmoHeadSignature)) {
+			$updHeadSig = $pdo->prepare("UPDATE users SET signature = ? WHERE drrmoID = ? AND role = 'approving_authority'");
+			$updHeadSig->execute([$drrmoHeadSignature, $drrmoID]);
+		}
 	}
 
 	$ok(['updated' => true]);

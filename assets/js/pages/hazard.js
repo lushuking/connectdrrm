@@ -192,12 +192,42 @@ class HazardDashboard {
         const defaultCenter = [7.8258, 123.4370];
         const center = savedCenter ? JSON.parse(savedCenter) : defaultCenter;
         const zoom = savedZoom ? parseInt(savedZoom, 10) : 8;
-        this.map = L.map('hazardMap').setView(center, zoom);
+        this.map = L.map('hazardMap', { zoomControl: false }).setView(center, zoom);
 
-        // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // Custom position zoom control to bottom right so it doesn't clash with floating header/pill
+        L.control.zoom({
+            position: 'bottomright'
+        }).addTo(this.map);
+
+        // Define base maps
+        const streetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 18
+        });
+
+        const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+            maxZoom: 18
+        });
+
+        const darkModeMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            maxZoom: 18
+        });
+
+        // Add streetMap by default
+        streetMap.addTo(this.map);
+
+        const baseMaps = {
+            "<span class='map-control-layer-label'><span class='material-icons' style='font-size:14px;vertical-align:middle;'>map</span>Street View</span>": streetMap,
+            "<span class='map-control-layer-label'><span class='material-icons' style='font-size:14px;vertical-align:middle;'>satellite</span>Satellite View</span>": satelliteMap,
+            "<span class='map-control-layer-label'><span class='material-icons' style='font-size:14px;vertical-align:middle;'>dark_mode</span>Dark View</span>": darkModeMap
+        };
+
+        // Create the Layer Control with base maps
+        this.layerControl = L.control.layers(baseMaps, null, {
+            position: 'topright',
+            collapsed: true
         }).addTo(this.map);
 
         // Set bounds to limit zoom to Zamboanga del Sur area
@@ -245,6 +275,173 @@ class HazardDashboard {
         this.addMapLegend();
         
         this.mapInitialized = true;
+
+        // Add coordinate tracker (Google Maps-style lat/lng display)
+        this.addCoordinateTracker();
+    }
+
+    addCoordinateTracker() {
+        // Create the floating coordinate pill
+        const pill = document.createElement('div');
+        pill.id = 'mapCoordPill';
+        pill.style.cssText = `
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            color: #e2e8f0;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 6px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            pointer-events: auto; /* enable click on dismiss button */
+            letter-spacing: 0.4px;
+            white-space: nowrap;
+            transition: opacity 0.2s ease;
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        `;
+        pill.innerHTML = `
+            <span style="color:#60a5fa; font-size:10px;">📍</span>
+            <span id="mapCoordLat" style="color:#86efac;">--°N</span>
+            <span style="color:rgba(255,255,255,0.3);">|</span>
+            <span id="mapCoordLng" style="color:#fbbf24;">--°E</span>
+            <span id="mapCoordPinned" style="display:none; margin-left:6px; color:#f472b6; font-size:10px; font-family:sans-serif; cursor:pointer; font-weight:700;">📌 pinned <span id="unpinBtn" style="color:#ef4444; margin-left:4px; font-weight:bold; font-size:12px;">×</span></span>
+        `;
+
+        const mapEl = document.getElementById('hazardMap');
+        if (mapEl) mapEl.appendChild(pill);
+
+        // Prevent Leaflet map click/interaction when clicking on the coordinates pill itself
+        L.DomEvent.disableClickPropagation(pill);
+
+        let isPinned = false;
+        this.pinnedLocationMarker = null;
+
+        // Show coordinates on mousemove
+        this.map.on('mousemove', (e) => {
+            if (isPinned) return;
+            const lat = e.latlng.lat.toFixed(6);
+            const lng = e.latlng.lng.toFixed(6);
+            document.getElementById('mapCoordLat').textContent = `${lat}°N`;
+            document.getElementById('mapCoordLng').textContent = `${lng}°E`;
+            pill.style.opacity = '1';
+        });
+
+        // Hide when mouse leaves
+        this.map.on('mouseout', () => {
+            if (!isPinned) pill.style.opacity = '0';
+        });
+
+        // Pin on click
+        this.map.on('click', (e) => {
+            // Check if we clicked on map and not on controls/markers
+            if (e.originalEvent && e.originalEvent.target && e.originalEvent.target.closest('.leaflet-control, .hazard-marker-container, .marker-cluster')) {
+                return;
+            }
+
+            const lat = e.latlng.lat.toFixed(6);
+            const lng = e.latlng.lng.toFixed(6);
+            document.getElementById('mapCoordLat').textContent = `${lat}°N`;
+            document.getElementById('mapCoordLng').textContent = `${lng}°E`;
+            pill.style.opacity = '1';
+
+            isPinned = true;
+            pill.style.background = 'rgba(30, 58, 138, 0.92)';
+            pill.style.borderColor = 'rgba(96,165,250,0.5)';
+            const pinnedLabel = document.getElementById('mapCoordPinned');
+            if (pinnedLabel) pinnedLabel.style.display = 'inline';
+
+            // Remove old marker if any
+            if (this.pinnedLocationMarker) {
+                this.map.removeLayer(this.pinnedLocationMarker);
+            }
+
+            // Create a beautiful pulsed pink pin to highlight the exact pinned spot
+            const pinIcon = L.divIcon({
+                className: 'pinned-location-marker',
+                html: `
+                    <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 30px; height: 30px;">
+                        <div style="
+                            position: absolute;
+                            width: 36px;
+                            height: 36px;
+                            background: rgba(244, 114, 182, 0.4);
+                            border-radius: 50%;
+                            animation: pinPulse 1.8s infinite ease-in-out;
+                        "></div>
+                        <div style="
+                            background: #f472b6;
+                            width: 12px;
+                            height: 12px;
+                            border-radius: 50%;
+                            border: 2px solid white;
+                            box-shadow: 0 0 8px rgba(0,0,0,0.4);
+                            z-index: 2;
+                        "></div>
+                    </div>
+                `,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+            });
+            
+            // Add pinPulse animation keyframe styles if they don't exist yet
+            if (!document.getElementById('pinPulseStyles')) {
+                const style = document.createElement('style');
+                style.id = 'pinPulseStyles';
+                style.textContent = `
+                    @keyframes pinPulse {
+                        0% { transform: scale(0.5); opacity: 1; }
+                        100% { transform: scale(1.6); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
+            this.pinnedLocationMarker = L.marker(e.latlng, { icon: pinIcon }).addTo(this.map);
+
+            // Auto-populate Report Hazard form coordinates
+            const reportLat = document.getElementById('hazardLatitude');
+            const reportLng = document.getElementById('hazardLongitude');
+            if (reportLat) reportLat.value = lat;
+            if (reportLng) reportLng.value = lng;
+        });
+
+        // Wire up dismiss/unpin button listener
+        const pinnedLabel = pill.querySelector('#mapCoordPinned');
+        if (pinnedLabel) {
+            pinnedLabel.addEventListener('click', (ev) => {
+                ev.preventDefault();
+                ev.stopPropagation(); // prevent map click triggering again
+                isPinned = false;
+                pill.style.background = 'rgba(15, 23, 42, 0.85)';
+                pill.style.borderColor = 'rgba(255,255,255,0.12)';
+                pinnedLabel.style.display = 'none';
+                
+                if (this.pinnedLocationMarker) {
+                    this.map.removeLayer(this.pinnedLocationMarker);
+                    this.pinnedLocationMarker = null;
+                }
+                
+                // Clear form coordinates
+                const reportLat = document.getElementById('hazardLatitude');
+                const reportLng = document.getElementById('hazardLongitude');
+                if (reportLat) reportLat.value = '';
+                if (reportLng) reportLng.value = '';
+
+                // Hide pill
+                pill.style.opacity = '0';
+            });
+        }
     }
 
     setupMapControls() {
@@ -426,8 +623,75 @@ class HazardDashboard {
         this.landArea = landArea;
     }
 
+    async loadMarkerClusterLibrary() {
+        if (window.L && window.L.markerClusterGroup) return;
+        return new Promise((resolve, reject) => {
+            // Load CSS
+            if (!document.getElementById('markercluster-css')) {
+                const link1 = document.createElement('link');
+                link1.id = 'markercluster-css';
+                link1.rel = 'stylesheet';
+                link1.href = 'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css';
+                document.head.appendChild(link1);
+            }
+            if (!document.getElementById('markercluster-default-css')) {
+                const link2 = document.createElement('link');
+                link2.id = 'markercluster-default-css';
+                link2.rel = 'stylesheet';
+                link2.href = 'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css';
+                document.head.appendChild(link2);
+            }
+            // Custom premium marker cluster styles
+            if (!document.getElementById('markercluster-premium-styles')) {
+                const style = document.createElement('style');
+                style.id = 'markercluster-premium-styles';
+                style.textContent = `
+                    .marker-cluster-premium {
+                        background: rgba(15, 23, 42, 0.75);
+                        backdrop-filter: blur(8px);
+                        -webkit-backdrop-filter: blur(8px);
+                        border: 2px solid rgba(255, 255, 255, 0.25);
+                        border-radius: 50%;
+                        color: #fff;
+                        font-weight: 700;
+                        font-size: 13px;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+                        width: 40px !important;
+                        height: 40px !important;
+                        margin-left: -20px !important;
+                        margin-top: -20px !important;
+                    }
+                    .marker-cluster-premium span {
+                        line-height: 36px;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            // Load JS
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js';
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('Failed to load MarkerCluster library'));
+            document.head.appendChild(script);
+        });
+    }
+
     async addHazardMarkers() {
+        // Load marker cluster library
+        try {
+            await this.loadMarkerClusterLibrary();
+        } catch (e) {
+            console.error("MarkerCluster load failed, falling back to basic markers:", e);
+        }
+
         // Clear existing markers
+        if (this.markerClusterGroup) {
+            this.map.removeLayer(this.markerClusterGroup);
+        }
         this.markers.forEach(marker => this.map.removeLayer(marker));
         this.markers = [];
 
@@ -495,6 +759,23 @@ class HazardDashboard {
 
         let fallbackCount = 0;
 
+        // Initialize Marker Cluster Group if library loaded
+        if (window.L && window.L.markerClusterGroup) {
+            this.markerClusterGroup = L.markerClusterGroup({
+                iconCreateFunction: function(cluster) {
+                    const childCount = cluster.getChildCount();
+                    return L.divIcon({
+                        html: `<span>${childCount}</span>`,
+                        className: 'marker-cluster-premium',
+                        iconSize: L.point(40, 40)
+                    });
+                },
+                maxClusterRadius: 40
+            });
+        } else {
+            this.markerClusterGroup = null;
+        }
+
         this.filteredHazards.forEach(hazard => {
             let [lat, lng] = hazard.coordinates || [0, 0];
 
@@ -505,24 +786,38 @@ class HazardDashboard {
             }
 
             const marker = L.marker([lat, lng], {
-                icon: this.getHazardIcon(hazard.severity)
-            }).addTo(this.map);
+                icon: this.getHazardIcon(hazard.severity, hazard.type)
+            });
 
             const isFallback = !inBounds(...(hazard.coordinates || [0, 0]));
             marker.bindPopup(`
-                <div class="map-popup" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-                    <h3 style="font-weight: 600; color: #1e293b;">${hazard.title}</h3>
-                    ${isFallback ? `<p style="color:#f59e0b; font-size:0.8rem; margin-bottom:6px;">⚠️ Approximate location — no exact coordinates saved</p>` : ''}
-                    <p style="color: #64748b;"><strong>Location:</strong> ${hazard.location}</p>
-                    <p style="color: #64748b;"><strong>Severity:</strong> <span class="severity-${hazard.severity}">${hazard.severity.toUpperCase()}</span></p>
-                    <p style="color: #64748b;"><strong>Status:</strong> ${hazard.status}</p>
-                    <p style="color: #64748b;"><strong>Affected:</strong> ${hazard.affected.toLocaleString()} people</p>
-                    <button onclick="hazardDashboard.viewHazardDetails(${hazard.id})" class="btn btn-primary btn-sm">View Details</button>
+                <div class="map-popup" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-width: 220px;">
+                    <h3 style="font-weight: 600; color: #1e293b; font-size: 14px; margin-bottom: 8px;">${hazard.title}</h3>
+                    ${isFallback ? `<p style="color:#f59e0b; font-size:0.75rem; margin-bottom:6px; font-weight: 500;">⚠️ Approximate location — no exact coordinates saved</p>` : ''}
+                    <div style="font-size: 12px; display: grid; gap: 4px;">
+                        <p style="color: #64748b; margin: 0;"><strong>Location:</strong> ${hazard.location}</p>
+                        <p style="color: #64748b; margin: 0;"><strong>Severity:</strong> <span class="badge bg-${hazard.severity === 'critical' ? 'danger' : hazard.severity === 'high' ? 'warning' : 'info'}" style="font-size: 10px; padding: 2px 6px;">${hazard.severity.toUpperCase()}</span></p>
+                        <p style="color: #64748b; margin: 0;"><strong>Status:</strong> <span style="text-transform: capitalize;">${hazard.status}</span></p>
+                        <p style="color: #64748b; margin: 0;"><strong>Affected:</strong> ${(typeof hazard.affected === 'number' || (!isNaN(hazard.affected) && hazard.affected !== '')) ? Number(hazard.affected).toLocaleString() + ' people' : (hazard.affected || 'Not specified')}</p>
+                    </div>
+                    <div style="margin-top: 10px; border-top: 1px solid #e2e8f0; padding-top: 8px;">
+                        <button onclick="hazardDashboard.viewHazardDetails(${hazard.id})" class="btn btn-primary btn-sm w-100" style="font-size: 11px; padding: 4px 8px;">View Details</button>
+                    </div>
                 </div>
             `);
 
             this.markers.push(marker);
+
+            if (this.markerClusterGroup) {
+                this.markerClusterGroup.addLayer(marker);
+            } else {
+                marker.addTo(this.map);
+            }
         });
+
+        if (this.markerClusterGroup) {
+            this.map.addLayer(this.markerClusterGroup);
+        }
 
         if (fallbackCount > 0) {
             console.info(`[HazardMap] ${fallbackCount} hazard(s) placed at approximate locations (no exact coords in DB).`);
@@ -535,31 +830,117 @@ class HazardDashboard {
         }
     }
 
-
-    getHazardIcon(severity) {
+    getHazardIcon(severity, type) {
         const colors = {
-            'low': '#10b981',
-            'medium': '#f59e0b',
-            'high': '#ef4444',
-            'critical': '#dc2626'
+            'low': '#10b981',      // Emerald Green
+            'medium': '#f59e0b',   // Amber
+            'high': '#ef4444',     // Red
+            'critical': '#dc2626'  // Dark Red
         };
 
+        const icons = {
+            'flood': 'water',
+            'flash-flood': 'water',
+            'landslide': 'terrain',
+            'earthquake': 'grid_view',
+            'typhoon': 'cyclone',
+            'storm': 'cyclone',
+            'fire': 'whatshot',
+            'other': 'warning'
+        };
+
+        // Normalize type
+        let normType = String(type || 'other').toLowerCase().trim();
+        if (normType.includes('flood')) normType = 'flood';
+        else if (normType.includes('landslide')) normType = 'landslide';
+        else if (normType.includes('earthquake')) normType = 'earthquake';
+        else if (normType.includes('typhoon') || normType.includes('storm')) normType = 'storm';
+        else if (normType.includes('fire')) normType = 'fire';
+        else normType = 'other';
+
+        const iconName = icons[normType] || 'warning';
+        const color = colors[severity] || '#f59e0b';
+
         return L.divIcon({
-            className: 'hazard-marker',
-            html: `<div style="
-                background: ${colors[severity]};
-                width: 20px;
-                height: 20px;
-                border-radius: 50%;
-                border: 3px solid white;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            "></div>`,
-            iconSize: [20, 20],
-            iconAnchor: [10, 10]
+            className: 'hazard-marker-container',
+            html: `
+                <div class="hazard-marker-pin" style="
+                    background: ${color};
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 50% 50% 50% 0;
+                    transform: rotate(-45deg);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+                    border: 2px solid white;
+                ">
+                    <span class="material-icons" style="
+                        transform: rotate(45deg);
+                        font-size: 15px;
+                        color: white;
+                    ">${iconName}</span>
+                </div>
+            `,
+            iconSize: [30, 30],
+            iconAnchor: [15, 30],
+            popupAnchor: [0, -30]
         });
     }
 
+    toggleFullscreenMap() {
+        const mapSection = document.querySelector('.hazard-map-section');
+        const fsBtn = document.getElementById('fullscreenMapBtn');
+        if (!mapSection || !fsBtn) return;
+
+        const icon = fsBtn.querySelector('.material-icons');
+
+        if (mapSection.classList.contains('fullscreen-active')) {
+            mapSection.classList.remove('fullscreen-active');
+            if (icon) icon.textContent = 'fullscreen';
+            fsBtn.title = 'Toggle Fullscreen Map';
+            fsBtn.classList.remove('btn-secondary');
+            fsBtn.classList.add('btn-outline-secondary');
+        } else {
+            // If map is currently blurred/hidden, show it first
+            if (this.isMinimized) {
+                this.toggleMapSize();
+            }
+            mapSection.classList.add('fullscreen-active');
+            if (icon) icon.textContent = 'fullscreen_exit';
+            fsBtn.title = 'Exit Fullscreen Map';
+            fsBtn.classList.remove('btn-outline-secondary');
+            fsBtn.classList.add('btn-secondary');
+        }
+
+        // Invalidate map size so it fits the new container dimensions
+        setTimeout(() => {
+            if (this.map) {
+                this.map.invalidateSize();
+            }
+        }, 150);
+    }
+
     bindEvents() {
+        // Fullscreen map button
+        const fsBtn = document.getElementById('fullscreenMapBtn');
+        if (fsBtn) {
+            fsBtn.addEventListener('click', () => {
+                this.toggleFullscreenMap();
+            });
+        }
+
+        // ESC key to exit fullscreen
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const mapSection = document.querySelector('.hazard-map-section');
+                if (mapSection && mapSection.classList.contains('fullscreen-active')) {
+                    this.toggleFullscreenMap();
+                }
+            }
+        });
+
         // Report hazard button
         document.getElementById('reportHazardBtn').addEventListener('click', () => {
             this.showReportModal();
@@ -678,78 +1059,83 @@ class HazardDashboard {
             this.submitEditHazard();
         });
 
-        // Location input with autocomplete + keyboard navigation
+        // Location input with manual entry + map pin integration
         const locationInput = document.getElementById('hazardLocation');
         const locationDropdown = document.getElementById('locationDropdown');
         this._locationActiveIndex = -1;
         this._searchTimeout = null;
         
-        // Add search icons to the input field
-        this.addSearchIcons(locationInput);
-        
-        locationInput.addEventListener('input', (e) => {
-            this._locationActiveIndex = -1;
+        // Add search icons to the input field if autocomplete is used
+        if (locationInput && locationDropdown) {
+            this.addSearchIcons(locationInput);
             
-            // Clear previous timeout
-            if (this._searchTimeout) {
-                clearTimeout(this._searchTimeout);
-            }
-            
-            // Debounce search to prevent excessive API calls
-            this._searchTimeout = setTimeout(() => {
-            this.showLocationSuggestions(e.target.value);
-            }, 150); // 150ms delay
-        });
-
-        locationInput.addEventListener('focus', () => {
-            if (locationInput.value.trim()) {
+            locationInput.addEventListener('input', (e) => {
                 this._locationActiveIndex = -1;
-                this.showLocationSuggestions(locationInput.value);
-            }
-        });
-
-        locationInput.addEventListener('keydown', (e) => {
-            const items = Array.from(locationDropdown.querySelectorAll('.location-suggestion'));
-            if (!items.length) return;
-            
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                this._locationActiveIndex = (this._locationActiveIndex + 1) % items.length;
-                this.updateActiveSuggestion(items);
-                this.scrollToActiveItem(items);
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                this._locationActiveIndex = (this._locationActiveIndex - 1 + items.length) % items.length;
-                this.updateActiveSuggestion(items);
-                this.scrollToActiveItem(items);
-            } else if (e.key === 'Enter') {
-                if (this._locationActiveIndex >= 0) {
-                    e.preventDefault();
-                    items[this._locationActiveIndex].click();
+                
+                // Clear previous timeout
+                if (this._searchTimeout) {
+                    clearTimeout(this._searchTimeout);
                 }
-            } else if (e.key === 'Escape') {
-                locationDropdown.classList.remove('show');
-                this._locationActiveIndex = -1;
-            } else if (e.key === 'Tab') {
-                // Allow tab to work normally but close dropdown
-                setTimeout(() => {
-                    locationDropdown.classList.remove('show');
-                }, 100);
-            }
-        });
+                
+                // Debounce search to prevent excessive API calls
+                this._searchTimeout = setTimeout(() => {
+                    this.showLocationSuggestions(e.target.value);
+                }, 150); // 150ms delay
+            });
 
-        // Disable auto-lookup while typing to prevent flicker; we only lookup on selection
+            locationInput.addEventListener('focus', () => {
+                if (locationInput.value.trim()) {
+                    this._locationActiveIndex = -1;
+                    this.showLocationSuggestions(locationInput.value);
+                }
+            });
+
+            locationInput.addEventListener('keydown', (e) => {
+                const items = Array.from(locationDropdown.querySelectorAll('.location-suggestion'));
+                if (!items.length) return;
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    this._locationActiveIndex = (this._locationActiveIndex + 1) % items.length;
+                    this.updateActiveSuggestion(items);
+                    this.scrollToActiveItem(items);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    this._locationActiveIndex = (this._locationActiveIndex - 1 + items.length) % items.length;
+                    this.updateActiveSuggestion(items);
+                    this.scrollToActiveItem(items);
+                } else if (e.key === 'Enter') {
+                    if (this._locationActiveIndex >= 0) {
+                        e.preventDefault();
+                        items[this._locationActiveIndex].click();
+                    }
+                } else if (e.key === 'Escape') {
+                    locationDropdown.classList.remove('show');
+                    this._locationActiveIndex = -1;
+                } else if (e.key === 'Tab') {
+                    // Allow tab to work normally but close dropdown
+                    setTimeout(() => {
+                        locationDropdown.classList.remove('show');
+                    }, 100);
+                }
+            });
+        }
 
         // Clear coordinates button
-        document.getElementById('clearCoordinates').addEventListener('click', () => {
-            document.getElementById('hazardLatitude').value = '';
-            document.getElementById('hazardLongitude').value = '';
-            this.updateCoordinateDisplay();
-        });
+        const clearCoordsBtn = document.getElementById('clearCoordinates');
+        if (clearCoordsBtn) {
+            clearCoordsBtn.addEventListener('click', () => {
+                const latEl = document.getElementById('hazardLatitude');
+                const lngEl = document.getElementById('hazardLongitude');
+                if (latEl) latEl.value = '';
+                if (lngEl) lngEl.value = '';
+                this.updateCoordinateDisplay();
+            });
+        }
 
         // Hide dropdown when clicking outside
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('.location-input-container')) {
+            if (locationDropdown && !e.target.closest('.location-input-container')) {
                 locationDropdown.classList.remove('show');
             }
         });
@@ -1106,12 +1492,42 @@ class HazardDashboard {
 
     updateMetrics() {
         const activeHazards = this.hazards.filter(h => h.status === 'active').length;
-        const totalAffected = this.hazards.reduce((sum, h) => sum + h.affected, 0);
         const criticalAlerts = this.hazards.filter(h => h.severity === 'critical').length;
         const underMonitor = this.hazards.filter(h => h.status === 'monitoring').length;
 
+        const affectedStrings = [];
+        let totalAffected = 0;
+        this.hazards.forEach(h => {
+            if (!h.affected) return;
+            const num = parseInt(h.affected, 10);
+            if (!isNaN(num)) {
+                totalAffected += num;
+                const desc = String(h.affected).replace(/^\d+\s*/, '').trim();
+                if (desc) {
+                    affectedStrings.push(`${num} ${desc}`);
+                }
+            } else {
+                affectedStrings.push(String(h.affected));
+            }
+        });
+
         document.getElementById('activeHazards').textContent = activeHazards;
-        document.getElementById('peopleAffected').textContent = totalAffected.toLocaleString();
+        
+        const countEl = document.getElementById('peopleAffectedCount');
+        if (countEl) countEl.textContent = totalAffected.toLocaleString();
+
+        const descEl = document.getElementById('peopleAffectedDesc');
+        if (descEl) {
+            if (affectedStrings.length > 0) {
+                const uniqueStrings = [...new Set(affectedStrings)];
+                const displayDesc = uniqueStrings.slice(0, 3).join(', ') + (uniqueStrings.length > 3 ? '...' : '');
+                descEl.textContent = `(${displayDesc})`;
+                descEl.style.display = 'block';
+            } else {
+                descEl.style.display = 'none';
+            }
+        }
+
         document.getElementById('criticalAlerts').textContent = criticalAlerts;
         document.getElementById('underMonitor').textContent = underMonitor;
     }
@@ -1794,7 +2210,7 @@ class HazardDashboard {
                             <span class="material-icons" style="font-size:16px; color:#f59e0b;">people</span>
                             <span style="font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:0.3px;">Affected</span>
                         </div>
-                        <p style="margin:0; font-size:14px; font-weight:600; color:#1e293b;">${affected > 0 ? Number(affected).toLocaleString() + ' people' : 'Not specified'}</p>
+                        <p style="margin:0; font-size:14px; font-weight:600; color:#1e293b;">${(typeof affected === 'number' || (!isNaN(affected) && affected !== '')) ? Number(affected).toLocaleString() + ' people' : (affected || 'Not specified')}</p>
                     </div>
                     <!-- REPORTED -->
                     <div style="background:#f8fafc; border-radius:10px; padding:12px 14px; border:1px solid #e2e8f0;">
@@ -1876,7 +2292,7 @@ class HazardDashboard {
         setVal('hazardLocation', hazard.hazardLocation || hazard.location || '');
         setVal('hazardLatitude', Array.isArray(hazard.coordinates)? hazard.coordinates[0] : '');
         setVal('hazardLongitude', Array.isArray(hazard.coordinates)? hazard.coordinates[1] : '');
-        setVal('peopleAffected', hazard.peopleAffected || hazard.affected || 0);
+        setVal('peopleAffected', hazard.peopleAffected || hazard.affected || '');
         // Update coordinate display and selected locations
         this.updateCoordinateDisplay();
         this.clearAllSelectedLocations();
@@ -2098,16 +2514,18 @@ class HazardDashboard {
     }
 
     updateCoordinateDisplay() {
-        const lat = document.getElementById('hazardLatitude').value;
-        const lng = document.getElementById('hazardLongitude').value;
+        const latEl = document.getElementById('hazardLatitude');
+        const lngEl = document.getElementById('hazardLongitude');
+        const lat = latEl ? latEl.value : '';
+        const lng = lngEl ? lngEl.value : '';
         const display = document.getElementById('coordinateDisplay');
         const text = document.getElementById('coordinateText');
         
         if (lat && lng) {
-            text.textContent = `${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)}`;
-            display.style.display = 'block';
+            if (text) text.textContent = `${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)}`;
+            if (display) display.style.display = 'block';
         } else {
-            display.style.display = 'none';
+            if (display) display.style.display = 'none';
         }
     }
 

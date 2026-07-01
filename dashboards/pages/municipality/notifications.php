@@ -209,7 +209,7 @@ async function loadNotifications(append = false) {
             return `
                 <a href="${escapeHtml(href)}" class="list-group-item border-0 ${isRead ? '' : 'bg-light'} notification-item text-decoration-none" 
                    data-notif-id="${notification.notifID}" 
-                   onclick="event.preventDefault(); markNotificationAsSeen(${notification.notifID}); setTimeout(() => { window.location.href = '${escapeHtml(href)}'; }, 100);">
+                   onclick="markNotificationAsSeen(${notification.notifID});">
                     <div class="d-flex align-items-start">
                         <div class="me-3">
                             <div class="bg-${iconClass} bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
@@ -307,7 +307,8 @@ async function markNotificationAsSeen(notifId) {
     try {
         await fetch(`config/notifications.php?action=mark_single_read&id=${notifId}`, {
             method: 'GET',
-            credentials: 'same-origin'
+            credentials: 'same-origin',
+            keepalive: true
         });
         
         // Update UI immediately

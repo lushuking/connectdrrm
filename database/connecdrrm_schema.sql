@@ -258,6 +258,45 @@ ALTER TABLE `requests` ADD COLUMN IF NOT EXISTS `purposeOfRequest` VARCHAR(255) 
 -- Ensure users.profileCompleted exists (used by profile flow).
 ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `profileCompleted` TINYINT(1) NULL DEFAULT 0;
 
--- Ensure users.municipalityID exists (legacy column referenced in a few endpoints).
+-- Ensure requests.municipalityID exists (legacy column referenced in a few endpoints).
 ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `municipalityID` INT NULL AFTER `drrmoID`;
+
+-- Ensure requests.head_approval_status exists to track if request was approved by the head or bypassed.
+ALTER TABLE `requests` ADD COLUMN IF NOT EXISTS `head_approval_status` VARCHAR(50) DEFAULT NULL;
+
+-- Ensure requests.head_approved_by exists to track who approved or bypassed the request.
+ALTER TABLE `requests` ADD COLUMN IF NOT EXISTS `head_approved_by` VARCHAR(255) DEFAULT NULL;
+
+-- Ensure resources.damagedStock exists to track damaged items.
+ALTER TABLE `resources` ADD COLUMN IF NOT EXISTS `damagedStock` INT NULL DEFAULT 0 AFTER `availableStock`;
+
+-- Ensure requests.damagedQty and damageAssessment exist for returns.
+ALTER TABLE `requests` ADD COLUMN IF NOT EXISTS `damagedQty` INT NULL DEFAULT NULL AFTER `returnedQty`;
+ALTER TABLE `requests` ADD COLUMN IF NOT EXISTS `damageAssessment` TEXT NULL AFTER `damagedQty`;
+
+-- Ensure resources.plateNumber exists to track serial numbers / plate numbers.
+ALTER TABLE `resources` ADD COLUMN IF NOT EXISTS `plateNumber` VARCHAR(255) NULL DEFAULT NULL AFTER `storageLocation`;
+
+-- Table: resource_items
+CREATE TABLE IF NOT EXISTS `resource_items` (
+    `itemID` INT NOT NULL AUTO_INCREMENT,
+    `resourceID` INT NOT NULL,
+    `uniqueIdentifier` VARCHAR(255) NOT NULL,
+    `status` VARCHAR(50) NOT NULL DEFAULT 'Available',
+    `storageLocation` VARCHAR(255) NULL,
+    `conditionNotes` TEXT NULL,
+    `createdAt` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    `updatedAt` DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`itemID`),
+    CONSTRAINT `fk_resource_items_resource` FOREIGN KEY (`resourceID`) REFERENCES `resources` (`resourceID`) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table: request_dispatched_items
+CREATE TABLE IF NOT EXISTS `request_dispatched_items` (
+    `requestID` INT NOT NULL,
+    `itemID` INT NOT NULL,
+    PRIMARY KEY (`requestID`, `itemID`),
+    CONSTRAINT `fk_rdi_request` FOREIGN KEY (`requestID`) REFERENCES `requests` (`requestID`) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT `fk_rdi_item` FOREIGN KEY (`itemID`) REFERENCES `resource_items` (`itemID`) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

@@ -153,6 +153,8 @@
     overflow-x: hidden;
 }
 
+
+
 /* Prevent Bootstrap card overflow:hidden from clipping table headers in scroll areas */
 .pdrrmo-reports-page .card:has(.pdrrmo-cc-scroll) {
     overflow: visible;

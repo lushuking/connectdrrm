@@ -36,18 +36,28 @@ try {
             r.resourceName,
             r.totalStock,
             r.availableStock,
+            r.damagedStock,
             r.minimumStock,
             r.unit,
             r.category,
             r.subcategory,
             r.description,
             r.storageLocation,
+            r.plateNumber,
             d.name as municipality,
             d.drrmoID,
             CASE 
-                WHEN r.availableStock > 0 THEN 'Available'
+                WHEN r.availableStock > 0 AND NOT (r.availableStock = 1 AND r.damagedStock = 1) THEN 'Available'
                 ELSE 'Unavailable'
-            END as status
+            END as status,
+            (
+                SELECT MIN(req.returnDate)
+                FROM requests req
+                WHERE req.resourceID = r.resourceID
+                  AND req.status IN ('approved', 'fulfilled', 'return pending')
+                  AND req.returnedAt IS NULL
+                  AND req.returnDate IS NOT NULL
+            ) AS nextAvailableDate
         FROM resources r
         JOIN drrmo d ON r.drrmoID = d.drrmoID
         WHERE r.drrmoID != ?
@@ -71,9 +81,9 @@ try {
     // Add status filter (two-tier)
     if (!empty($status)) {
         if ($status === 'Available') {
-            $sql .= " AND r.availableStock > 0";
+            $sql .= " AND r.availableStock > 0 AND NOT (r.availableStock = 1 AND r.damagedStock = 1)";
         } elseif ($status === 'Unavailable') {
-            $sql .= " AND r.availableStock = 0";
+            $sql .= " AND (r.availableStock = 0 OR (r.availableStock = 1 AND r.damagedStock = 1))";
         }
     }
     
@@ -81,7 +91,7 @@ try {
     $orderSql = "
         ORDER BY 
             CASE 
-                WHEN r.availableStock > 0 THEN 1
+                WHEN r.availableStock > 0 AND NOT (r.availableStock = 1 AND r.damagedStock = 1) THEN 1
                 ELSE 2
             END,
             r.resourceName, 
@@ -102,9 +112,9 @@ try {
     }
     if (!empty($status)) {
         if ($status === 'Available') {
-            $countSql .= " AND r.availableStock > 0";
+            $countSql .= " AND r.availableStock > 0 AND NOT (r.availableStock = 1 AND r.damagedStock = 1)";
         } elseif ($status === 'Unavailable') {
-            $countSql .= " AND r.availableStock = 0";
+            $countSql .= " AND (r.availableStock = 0 OR (r.availableStock = 1 AND r.damagedStock = 1))";
         }
     }
     $countStmt = $pdo->prepare($countSql);
@@ -116,6 +126,24 @@ try {
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $paginatedResources = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $resourceIds = array_column($paginatedResources, 'resourceID');
+    $itemsByResource = [];
+    if (!empty($resourceIds)) {
+        $inQuery = implode(',', array_fill(0, count($resourceIds), '?'));
+        $itemStmt = $pdo->prepare("SELECT itemID, resourceID, uniqueIdentifier, status, storageLocation, conditionNotes FROM resource_items WHERE resourceID IN ($inQuery)");
+        $itemStmt->execute($resourceIds);
+        $items = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($items as $item) {
+            $itemsByResource[$item['resourceID']][] = [
+                'id' => (int)$item['itemID'],
+                'uniqueIdentifier' => $item['uniqueIdentifier'],
+                'status' => $item['status'],
+                'storageLocation' => $item['storageLocation'],
+                'conditionNotes' => $item['conditionNotes']
+            ];
+        }
+    }
     
     // Calculate pagination info
     $totalPages = $totalResources > 0 ? (int) ceil($totalResources / $limit) : 1;
@@ -123,7 +151,7 @@ try {
     $hasPrevPage = $page > 1;
     
     // Format the data for the frontend
-    $formattedResources = array_map(function($resource) {
+    $formattedResources = array_map(function($resource) use ($itemsByResource) {
         return [
             'id' => $resource['resourceID'],
             'name' => $resource['resourceName'],
@@ -131,14 +159,18 @@ try {
             'municipality' => $resource['municipality'],
             'totalStock' => $resource['totalStock'],
             'availableStock' => $resource['availableStock'],
+            'damagedStock' => $resource['damagedStock'],
             'minimumStock' => $resource['minimumStock'],
             'unit' => $resource['unit'],
             'category' => $resource['category'],
             'subcategory' => $resource['subcategory'],
             'description' => $resource['description'],
             'storageLocation' => $resource['storageLocation'],
+            'plateNumber' => $resource['plateNumber'],
+            'items' => $itemsByResource[$resource['resourceID']] ?? [],
             'status' => $resource['status'],
-            'drrmoID' => $resource['drrmoID']
+            'drrmoID' => $resource['drrmoID'],
+            'nextAvailableDate' => $resource['nextAvailableDate'] ?? null
         ];
     }, $paginatedResources);
     

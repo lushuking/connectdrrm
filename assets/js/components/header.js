@@ -658,7 +658,7 @@ class HeaderComponent {
                         console.log('Notification href:', href, 'isRead:', isRead);
                         return `
                             <a class="item ${isRead ? 'read' : 'unread'}" href="${this.escapeHtml(href)}" 
-                               data-notif-id="${notification.notifID}" onclick="event.preventDefault(); markNotificationAsSeen(${notification.notifID}); setTimeout(() => { window.location.href = '${this.escapeHtml(href)}'; }, 100);">
+                               data-notif-id="${notification.notifID}" onclick="markNotificationAsSeen(${notification.notifID});">
                                 <div class="content">
                                     <div class="message ${isRead ? 'read-text' : 'unread-text'}">${this.escapeHtml(notification.message)}</div>
                                     <div class="time">${notification.timeAgo || new Date(notification.createdAt).toLocaleString()}</div>
@@ -716,7 +716,8 @@ window.markNotificationAsSeen = function(notifId) {
         // Call the API to mark notification as read
         fetch(`config/notifications.php?action=mark_single_read&id=${notifId}`, {
             method: 'GET',
-            credentials: 'same-origin'
+            credentials: 'same-origin',
+            keepalive: true
         }).then(response => response.json())
         .then(data => {
             if (data.success) {

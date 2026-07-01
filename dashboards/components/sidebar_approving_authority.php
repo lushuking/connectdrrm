@@ -19,6 +19,12 @@ $navigation = [
         'label' => 'Reports',
         'icon' => 'assessment',
         'url' => '?page=reports'
+    ],
+    [
+        'id' => 'settings',
+        'label' => 'Settings',
+        'icon' => 'settings',
+        'url' => '?page=settings'
     ]
 ];
 ?>

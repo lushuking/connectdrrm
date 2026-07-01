@@ -127,6 +127,10 @@ try {
                 'transportationMethod' => $row['transportationMethod'] ?? '',
                 'specialHandling' => $row['specialHandling'] ?? '',
                 'approvingAuthority' => $row['approvingAuthority'] ?? '',
+                'headApprovalStatus' => $row['head_approval_status'] ?? '',
+                'headApprovedBy' => $row['head_approved_by'] ?? '',
+                'approverTitle' => $row['approverTitle'] ?? '',
+                'approverSignature' => $row['approverSignature'] ?? '',
                 'budgetCode' => $row['budgetCode'] ?? '',
                 'emergencyContact' => $row['emergencyContact'] ?? '',
                 // Redundant labels for simple filters

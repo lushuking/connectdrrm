@@ -95,19 +95,20 @@ async function loadRequests() {
         
         if (data.success) {
             allRequests = data.requests;
-            filteredRequests = [...allRequests];
-            currentPage = 1;
-            populateRequestsTable(filteredRequests);
+            // Preserving filter state and page number during background refresh
+            applyFilters(true);
         } else {
             console.error('Failed to load requests:', data.error);
             allRequests = [];
             filteredRequests = [];
+            currentPage = 1;
             populateRequestsTable(filteredRequests);
         }
     } catch (error) {
         console.error('Error loading requests:', error);
         allRequests = [];
         filteredRequests = [];
+        currentPage = 1;
         populateRequestsTable(filteredRequests);
     }
     
@@ -207,7 +208,7 @@ function populateRequestsTable(requests) {
             const wasExpanded = expandedGroups.has(groupId);
             
             htmlContent += `
-                <tr class="table-group-header" style="background-color: #e3f2fd; border-left: 4px solid #2196f3;">
+                <tr class="table-group-header">
                     <td colspan="8" class="py-2">
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
@@ -280,7 +281,12 @@ function populateRequestsTable(requests) {
 
 function loadMunicipalities() {
     const municipalityFilter = document.getElementById('municipalityFilter');
-    const municipalities = [...new Set(allRequests.map(r => r.municipality))];
+    if (!municipalityFilter) return;
+    
+    // Preserve current selection
+    const currentValue = municipalityFilter.value;
+    
+    const municipalities = [...new Set(allRequests.map(r => r.municipality || r.fromMunicipality || r.toMunicipality).filter(Boolean))];
     
     municipalityFilter.innerHTML = '<option value="">All Municipalities</option>';
     municipalities.forEach(municipality => {
@@ -289,33 +295,65 @@ function loadMunicipalities() {
         option.textContent = municipality;
         municipalityFilter.appendChild(option);
     });
+    
+    // Restore selection
+    if (currentValue && municipalities.includes(currentValue)) {
+        municipalityFilter.value = currentValue;
+    }
 }
 
-function filterRequests() {
-    const statusFilter = document.getElementById('statusFilter').value;
-    const municipalityFilter = document.getElementById('municipalityFilter').value;
-    const priorityFilter = document.getElementById('priorityFilter').value;
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+function applyFilters(preservePage = false) {
+    const statusFilterEl = document.getElementById('statusFilter');
+    const municipalityFilterEl = document.getElementById('municipalityFilter');
+    const priorityFilterEl = document.getElementById('priorityFilter');
+    const searchInputEl = document.getElementById('searchInput');
+
+    const statusFilter = statusFilterEl ? statusFilterEl.value : '';
+    const municipalityFilter = municipalityFilterEl ? municipalityFilterEl.value : '';
+    const priorityFilter = priorityFilterEl ? priorityFilterEl.value : '';
+    const searchTerm = searchInputEl ? searchInputEl.value.toLowerCase() : '';
     
     filteredRequests = allRequests.filter(request => {
-        const matchesStatus = !statusFilter || request.status === statusFilter;
-        const matchesMunicipality = !municipalityFilter || request.municipality === municipalityFilter;
-        const matchesPriority = !priorityFilter || request.priority === priorityFilter;
+        const matchesStatus = !statusFilter || String(request.status).toLowerCase() === statusFilter.toLowerCase();
+        
+        // Match either fromMunicipality, toMunicipality, or the general municipality property
+        const matchesMunicipality = !municipalityFilter || 
+            String(request.municipality || '').toLowerCase() === municipalityFilter.toLowerCase() ||
+            String(request.fromMunicipality || '').toLowerCase() === municipalityFilter.toLowerCase() ||
+            String(request.toMunicipality || '').toLowerCase() === municipalityFilter.toLowerCase();
+            
+        const matchesPriority = !priorityFilter || String(request.priority).toLowerCase() === priorityFilter.toLowerCase();
+        
         const matchesSearch = !searchTerm || 
-            request.id.toLowerCase().includes(searchTerm) ||
-            request.municipality.toLowerCase().includes(searchTerm) ||
-            request.resourceType.toLowerCase().includes(searchTerm) ||
-            request.description.toLowerCase().includes(searchTerm);
+            String(request.id).toLowerCase().includes(searchTerm) ||
+            String(request.municipality || '').toLowerCase().includes(searchTerm) ||
+            String(request.fromMunicipality || '').toLowerCase().includes(searchTerm) ||
+            String(request.toMunicipality || '').toLowerCase().includes(searchTerm) ||
+            String(request.resourceType || '').toLowerCase().includes(searchTerm) ||
+            String(request.description || '').toLowerCase().includes(searchTerm);
         
         return matchesStatus && matchesMunicipality && matchesPriority && matchesSearch;
     });
     
-    currentPage = 1;
+    if (!preservePage) {
+        currentPage = 1;
+    } else {
+        // Clamp currentPage to max pages for the new filtered set
+        const totalPages = Math.max(1, Math.ceil(filteredRequests.length / pageSize));
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+        }
+    }
+    
     populateRequestsTable(filteredRequests);
 }
 
+function filterRequests() {
+    applyFilters(false);
+}
+
 function searchRequests() {
-    filterRequests();
+    applyFilters(false);
 }
 
 function refreshRequests() {
@@ -340,16 +378,53 @@ function updatePaginationUI(total, showingStart, showingEnd) {
 
     if (pageNumbers) {
         pageNumbers.innerHTML = '';
-        for (let i = 1; i <= totalPages; i++) {
+
+        const addPageButton = (pageIndex) => {
             const a = document.createElement('a');
             a.href = '#';
-            a.className = 'page-number' + (i === currentPage ? ' active' : '');
-            a.textContent = String(i);
+            a.className = 'page-number' + (pageIndex === currentPage ? ' active' : '');
+            a.textContent = String(pageIndex);
             a.addEventListener('click', (e) => {
                 e.preventDefault();
-                goToPage(i);
+                goToPage(pageIndex);
             });
             pageNumbers.appendChild(a);
+        };
+
+        const addEllipsis = () => {
+            const span = document.createElement('span');
+            span.className = 'page-number-ellipsis';
+            span.textContent = '...';
+            pageNumbers.appendChild(span);
+        };
+
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        // Always show page 1
+        if (startPage > 1) {
+            addPageButton(1);
+            if (startPage > 2) {
+                addEllipsis();
+            }
+        }
+
+        // Show page range
+        for (let i = startPage; i <= endPage; i++) {
+            addPageButton(i);
+        }
+
+        // Always show last page
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                addEllipsis();
+            }
+            addPageButton(totalPages);
         }
     }
 }
@@ -568,23 +643,44 @@ function viewRequestDetails(requestId) {
         </div>
         <div class="row mt-4">
             <div class="col-12">
-                <div class="card border-0 bg-light">
+                <div class="card border-0 bg-light" style="border-radius: 12px; border-left: 4px solid ${request.headApprovalStatus === 'approved' ? '#198754' : (request.headApprovalStatus === 'bypassed' ? '#ffc107' : '#0d6efd')} !important;">
                     <div class="card-body">
-                        <h6 class="card-title text-primary mb-3">
-                            <span class="material-icons me-2">verified_user</span>
-                            Authorization
+                        <h6 class="card-title text-primary mb-3 d-flex align-items-center gap-2">
+                            <span class="material-icons">verified_user</span>
+                            Authorization & Audit Details
                         </h6>
-                        <div class="row g-3">
-                            ${request.approvingAuthority ? `
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold text-muted">Approving Officer</label>
-                                <p class="mb-0">${request.approvingAuthority}</p>
-                            </div>` : ''}
-                            ${request.budgetCode ? `
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold text-muted">Budget Code</label>
-                                <p class="mb-0">${request.budgetCode}</p>
-                            </div>` : ''}
+                        <div class="row g-3 align-items-center">
+                            <div class="col-md-7">
+                                <div class="row g-3">
+                                    ${request.headApprovalStatus ? `
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold text-muted d-block mb-1">Approval Method</label>
+                                        <span class="badge ${request.headApprovalStatus === 'approved' ? 'bg-success' : 'bg-warning text-dark'} d-inline-flex align-items-center gap-1">
+                                            <span class="material-icons" style="font-size: 14px;">
+                                                ${request.headApprovalStatus === 'approved' ? 'verified' : 'fast_forward'}
+                                            </span>
+                                            ${request.headApprovalStatus === 'approved' ? 'Approved by Head' : 'Bypassed'}
+                                        </span>
+                                    </div>` : ''}
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold text-muted d-block mb-1">Authorized By</label>
+                                        <p class="mb-0 fw-bold text-dark fs-6">${request.headApprovedBy || request.approvingAuthority || 'N/A'}</p>
+                                        ${request.approverTitle ? `<small class="text-muted d-block">${request.approverTitle}</small>` : ''}
+                                    </div>
+                                    ${request.budgetCode ? `
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold text-muted d-block mb-1">Budget Code</label>
+                                        <p class="mb-0 fw-semibold text-secondary">${request.budgetCode}</p>
+                                    </div>` : ''}
+                                </div>
+                            </div>
+                            <div class="col-md-5 text-md-end text-center">
+                                ${request.approverSignature ? `
+                                <div class="d-inline-block p-2 bg-white border rounded shadow-xs">
+                                    <div class="text-muted small text-center" style="font-size: 8px; margin-bottom: 3px; font-weight: 700; text-transform: uppercase;">E-Signature</div>
+                                    <img src="${request.approverSignature}" alt="Digital Signature" style="max-height: 55px; max-width: 140px; object-fit: contain; display: block;">
+                                </div>` : ''}
+                            </div>
                         </div>
                     </div>
                 </div>

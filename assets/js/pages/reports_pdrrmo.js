@@ -379,25 +379,18 @@
         const top = rows.slice(0, 12);
         wrap.innerHTML = top.map(function (r) {
             const name = r.municipalityNameDisplay || r.municipalityName || '—';
-            const total = parseInt(r.totalSent, 10) || 0;
-            const ok = parseInt(r.approvedOrBetter, 10) || 0;
             const pct = Math.max(0, Math.min(100, Number(r.fulfillmentRate) || 0));
             const badgeCls = pct >= 85 ? 'text-bg-success' : (pct >= 60 ? 'text-bg-warning' : 'text-bg-danger');
             return `
-                <div class="pdrrmo-cc-item">
+                <div class="pdrrmo-cc-item" style="margin-bottom: 12px;">
                     <div class="row-top">
                         <div class="name">${escapeHtml(name)}</div>
                         <div class="d-flex align-items-center gap-2">
-                            <span class="pdrrmo-cc-pill">${ok.toLocaleString()}/${total.toLocaleString()}</span>
                             <span class="badge ${badgeCls}">${pct.toFixed(1)}%</span>
                         </div>
                     </div>
                     <div class="pdrrmo-cc-bar">
                         <span style="width:${pct}%;background:var(--bs-success,#198754);opacity:.75"></span>
-                    </div>
-                    <div class="meta">
-                        <span class="pdrrmo-cc-pill">pending ${(parseInt(r.pendingCount, 10) || 0).toLocaleString()}</span>
-                        <span class="pdrrmo-cc-pill">rejected ${(parseInt(r.rejectedCount, 10) || 0).toLocaleString()}</span>
                     </div>
                 </div>
             `;
@@ -469,33 +462,23 @@
             wrap.innerHTML = '<p class="text-muted text-center py-4 mb-0">Not enough request data to compute corridor processing time.</p>';
             return;
         }
-        wrap.innerHTML = `
-            <div class="table-responsive">
-                <table class="table table-sm align-middle mb-0" style="min-width:360px;">
-                    <thead class="table-light sticky-top">
-                        <tr>
-                            <th style="min-width:180px;">Corridor</th>
-                            <th class="text-end" style="width:90px;">Avg hrs</th>
-                            <th class="text-end" style="width:80px;">Requests</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows.map(function (r) {
-                            const from = r.fromNameDisplay || r.fromName || '—';
-                            const to = r.toNameDisplay || r.toName || '—';
-                            const avg = Number(r.avgHours) || 0;
-                            const total = parseInt(r.totalRequests, 10) || 0;
-                            const badgeCls = avg <= 6 ? 'text-bg-success' : (avg <= 24 ? 'text-bg-warning' : 'text-bg-danger');
-                            return `<tr>
-                                <td class="fw-semibold" style="white-space:nowrap;">${escapeHtml(from)} → ${escapeHtml(to)}</td>
-                                <td class="text-end"><span class="badge ${badgeCls}">${avg.toFixed(1)}h</span></td>
-                                <td class="text-end">${total.toLocaleString()}</td>
-                            </tr>`;
-                        }).join('')}
-                    </tbody>
-                </table>
-            </div>
-        `;
+        const top = rows.slice(0, 12);
+        wrap.innerHTML = top.map(function (r) {
+            const from = r.fromNameDisplay || r.fromName || '—';
+            const to = r.toNameDisplay || r.toName || '—';
+            const avg = Number(r.avgHours) || 0;
+            const badgeCls = avg <= 6 ? 'text-bg-success' : (avg <= 24 ? 'text-bg-warning' : 'text-bg-danger');
+            return `
+                <div class="pdrrmo-cc-item" style="margin-bottom: 12px;">
+                    <div class="row-top" style="margin-bottom: 0;">
+                        <div class="name" style="font-size: 0.9rem; font-weight: 600;">${escapeHtml(from)} → ${escapeHtml(to)}</div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge ${badgeCls}">${avg.toFixed(1)}h</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 
     function renderReturnCompliance(data) {
@@ -509,24 +492,18 @@
         const top = rows.slice(0, 12);
         wrap.innerHTML = top.map(function (r) {
             const name = r.municipalityNameDisplay || r.municipalityName || '—';
-            const total = parseInt(r.totalReturnedWithDue, 10) || 0;
-            const onTime = parseInt(r.onTimeCount, 10) || 0;
             const pct = Math.max(0, Math.min(100, Number(r.onTimePct) || 0));
             const badgeCls = pct >= 90 ? 'text-bg-success' : (pct >= 70 ? 'text-bg-warning' : 'text-bg-danger');
             return `
-                <div class="pdrrmo-cc-item">
+                <div class="pdrrmo-cc-item" style="margin-bottom: 12px;">
                     <div class="row-top">
                         <div class="name">${escapeHtml(name)}</div>
                         <div class="d-flex align-items-center gap-2">
-                            <span class="pdrrmo-cc-pill">${onTime.toLocaleString()}/${total.toLocaleString()}</span>
                             <span class="badge ${badgeCls}">${pct.toFixed(1)}%</span>
                         </div>
                     </div>
                     <div class="pdrrmo-cc-bar">
                         <span style="width:${pct}%;background:var(--bs-success,#198754);opacity:.75"></span>
-                    </div>
-                    <div class="meta">
-                        <span class="pdrrmo-cc-pill">late ${(parseInt(r.lateCount, 10) || 0).toLocaleString()}</span>
                     </div>
                 </div>
             `;
@@ -828,12 +805,9 @@
             const ffRows = Array.isArray(d.fulfillmentRateByMunicipality) ? d.fulfillmentRateByMunicipality.slice(0,10) : [];
             const ffList = ffRows.length ? pdfBarList(ffRows.map(function(r) {
                 const pct = Math.max(0,Math.min(100,Number(r.fulfillmentRate)||0));
-                const ok  = parseInt(r.approvedOrBetter,10)||0;
-                const tot = parseInt(r.totalSent,10)||0;
                 const bc  = pct>=85?'text-bg-success':(pct>=60?'text-bg-warning':'text-bg-danger');
                 return { label: r.municipalityNameDisplay||r.municipalityName||'—', pct: pct,
-                         pill: `${ok}/${tot}`, badgeCls: bc, badgeText: pct.toFixed(1)+'%', barColor:'#198754',
-                         meta: `pending ${parseInt(r.pendingCount,10)||0} · rejected ${parseInt(r.rejectedCount,10)||0}` };
+                         badgeCls: bc, badgeText: pct.toFixed(1)+'%', barColor:'#198754' };
             })) : '<p style="color:#6c757d;font-size:9px;">No fulfillment data.</p>';
 
             // ─ Processing corridors table ─

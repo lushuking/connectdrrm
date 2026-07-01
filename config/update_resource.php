@@ -34,8 +34,10 @@ try {
     $description = $input['description'] ?? '';
     $totalStock = $input['totalStock'] ?? null;
     $availableStock = $input['availableStock'] ?? null;
+    $damagedStock = $input['damagedStock'] ?? 0;
     $minimumStock = $input['minimumStock'] ?? 0;
     $storageLocation = $input['storageLocation'] ?? null;
+    $plateNumber = $input['plateNumber'] ?? null;
     
     if (!$resourceId || !$resourceName || !$category || !$unit || $totalStock === null || $availableStock === null) {
         throw new Exception('Missing required fields');
@@ -43,6 +45,10 @@ try {
     
     if ($availableStock > $totalStock) {
         throw new Exception('Available stock cannot be greater than total stock');
+    }
+    
+    if (($availableStock + $damagedStock) > $totalStock) {
+        throw new Exception('Available stock + Damaged stock cannot be greater than total stock');
     }
     
     // Verify the resource belongs to the current user's DRRMO
@@ -69,8 +75,10 @@ try {
             description = ?, 
             totalStock = ?, 
             availableStock = ?, 
+            damagedStock = ?, 
             minimumStock = ?, 
-            storageLocation = ?
+            storageLocation = ?,
+            plateNumber = ?
             WHERE resourceID = ? AND drrmoID = ?";
     
     $stmt = $pdo->prepare($sql);
@@ -82,13 +90,60 @@ try {
         $description,
         $totalStock,
         $availableStock,
+        $damagedStock,
         $minimumStock,
         $storageLocation,
+        $plateNumber,
         $resourceId,
         $drrmoID
     ]);
     
     if ($result) {
+        // Sync itemized units
+        if (isset($input['items']) && is_array($input['items'])) {
+            $submittedItemIds = [];
+            foreach ($input['items'] as $item) {
+                $itemId = $item['id'] ?? null;
+                $uniqueIdentifier = trim($item['uniqueIdentifier'] ?? '');
+                $status = trim($item['status'] ?? 'Available');
+                $storageLocation = trim($item['storageLocation'] ?? '');
+                $conditionNotes = trim($item['conditionNotes'] ?? '');
+
+                if ($uniqueIdentifier === '') {
+                    continue; // Skip invalid entries
+                }
+
+                if ($itemId) {
+                    // Update existing item
+                    $itemStmt = $pdo->prepare('
+                        UPDATE resource_items 
+                        SET uniqueIdentifier = ?, status = ?, storageLocation = ?, conditionNotes = ?
+                        WHERE itemID = ? AND resourceID = ?
+                    ');
+                    $itemStmt->execute([$uniqueIdentifier, $status, $storageLocation, $conditionNotes, $itemId, $resourceId]);
+                    $submittedItemIds[] = $itemId;
+                } else {
+                    // Insert new item
+                    $itemStmt = $pdo->prepare('
+                        INSERT INTO resource_items (resourceID, uniqueIdentifier, status, storageLocation, conditionNotes)
+                        VALUES (?, ?, ?, ?, ?)
+                    ');
+                    $itemStmt->execute([$resourceId, $uniqueIdentifier, $status, $storageLocation, $conditionNotes]);
+                    $submittedItemIds[] = $pdo->lastInsertId();
+                }
+            }
+
+            // Delete any items that are no longer in the list (e.g. if total stock was decreased)
+            if (!empty($submittedItemIds)) {
+                $inQuery = implode(',', array_fill(0, count($submittedItemIds), '?'));
+                $deleteStmt = $pdo->prepare("DELETE FROM resource_items WHERE resourceID = ? AND itemID NOT IN ($inQuery)");
+                $deleteStmt->execute(array_merge([$resourceId], $submittedItemIds));
+            } else {
+                $deleteStmt = $pdo->prepare("DELETE FROM resource_items WHERE resourceID = ?");
+                $deleteStmt->execute([$resourceId]);
+            }
+        }
+
         // Create out-of-stock notification using NotificationService
         try {
             require_once __DIR__ . '/notification_service.php';

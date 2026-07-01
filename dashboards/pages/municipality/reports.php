@@ -4,108 +4,103 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <!-- Reports Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h2 class="card-title mb-1">DRRM Reports & Analytics</h2>
-                    <p class="card-text text-muted">Generate comprehensive reports based on your actual DRRM data</p>
-                    <div class="mt-3">
-                        <button class="btn btn-primary" onclick="generateUnifiedReport()">
-                            <span class="material-icons me-2">table_chart</span>
-                            Generate All-in-One Report (Table)
-                        </button>
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); color: white;">
+        <div class="card-body p-5 position-relative">
+            <span class="material-icons position-absolute text-white" style="font-size: 150px; opacity: 0.1; right: 5%; top: 50%; transform: translateY(-50%);">insert_chart_outlined</span>
+            <div class="position-relative z-1">
+                <h2 class="fw-bold mb-2 text-white">DRRM Reports & Analytics</h2>
+                <p class="mb-4 text-white opacity-75 fs-6" style="max-width: 600px;">Generate comprehensive reports based on your municipality's actual DRRM data, including resource inventory, requests, and hazard incidents.</p>
+                <button class="btn btn-outline-light btn-lg rounded-pill fw-bold shadow-sm d-inline-flex align-items-center px-4 py-2" onclick="generateUnifiedReport()">
+                    <span class="material-icons me-2">table_chart</span>
+                    Generate All-in-One Report (Table)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Generate Report Cards -->
+    <div class="row g-4 mb-5 align-items-stretch">
+        <div class="col-md-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm rounded-4 position-relative overflow-hidden" onclick="generateMyResourcesReport()" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3 mt-2">
+                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
+                            <span class="material-icons text-primary" style="font-size: 32px;">inventory</span>
+                        </div>
                     </div>
+                    <h5 class="fw-bold mb-2 text-dark">My Resources</h5>
+                    <p class="text-muted small mb-4">Your municipality's resource inventory, stock levels, and availability status.</p>
+                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2 fw-semibold border border-primary border-opacity-25">Quick Generate</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm rounded-4 position-relative overflow-hidden" onclick="generateBorrowedResourcesReport()" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3 mt-2">
+                        <div class="bg-info bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
+                            <span class="material-icons text-info" style="font-size: 32px;">swap_horiz</span>
+                        </div>
+                    </div>
+                    <h5 class="fw-bold mb-2 text-dark">Borrowed From Us</h5>
+                    <p class="text-muted small mb-4">Who borrowed what from your municipality, when, and the current status.</p>
+                    <span class="badge bg-info bg-opacity-10 text-info rounded-pill px-3 py-2 fw-semibold border border-info border-opacity-25">Quick Generate</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm rounded-4 position-relative overflow-hidden" onclick="generateMyRequestsReport()" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3 mt-2">
+                        <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
+                            <span class="material-icons text-warning" style="font-size: 32px;">request_quote</span>
+                        </div>
+                    </div>
+                    <h5 class="fw-bold mb-2 text-dark">My Requests</h5>
+                    <p class="text-muted small mb-4">Requests your municipality made to others, current status, and response times.</p>
+                    <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3 py-2 fw-semibold border border-warning border-opacity-25">Quick Generate</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm rounded-4 position-relative overflow-hidden" onclick="generateMyHazardsReport()" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3 mt-2">
+                        <div class="bg-danger bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
+                            <span class="material-icons text-danger" style="font-size: 32px;">warning</span>
+                        </div>
+                    </div>
+                    <h5 class="fw-bold mb-2 text-dark">My Hazards</h5>
+                    <p class="text-muted small mb-4">Hazard incidents in your area, risk levels, and corresponding response actions.</p>
+                    <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-2 fw-semibold border border-danger border-opacity-25">Quick Generate</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Municipality-Specific Reports -->
-    <div class="row g-4 mb-4 align-items-stretch">
-        <div class="col-md-6 col-lg-3 d-flex">
-            <div class="card h-100 w-100 border-0 shadow-sm" onclick="generateMyResourcesReport()" style="cursor: pointer; min-height: 220px;">
-                <div class="card-body text-center p-4 d-flex flex-column justify-content-center">
-                    <div class="mb-3">
-                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                            <span class="material-icons text-primary fs-2">inventory</span>
-                        </div>
-                    </div>
-                    <h5 class="card-title mb-1">My Resources Report</h5>
-                    <p class="card-text text-muted small">Your municipality's resource inventory, stock levels, and availability status</p>
-                    <div class="mt-2">
-                        <span class="badge bg-primary">Quick Generate</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-6 col-lg-3 d-flex">
-            <div class="card h-100 w-100 border-0 shadow-sm" onclick="generateBorrowedResourcesReport()" style="cursor: pointer; min-height: 220px;">
-                <div class="card-body text-center p-4 d-flex flex-column justify-content-center">
-                    <div class="mb-3">
-                        <div class="bg-info bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                            <span class="material-icons text-info fs-2">swap_horiz</span>
-                        </div>
-                    </div>
-                    <h5 class="card-title mb-1">Resources Borrowed From Us</h5>
-                    <p class="card-text text-muted small">Who borrowed what from your municipality, when, and current status</p>
-                    <div class="mt-2">
-                        <span class="badge bg-info">Quick Generate</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-6 col-lg-3 d-flex">
-            <div class="card h-100 w-100 border-0 shadow-sm" onclick="generateMyRequestsReport()" style="cursor: pointer; min-height: 220px;">
-                <div class="card-body text-center p-4 d-flex flex-column justify-content-center">
-                    <div class="mb-3">
-                        <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                            <span class="material-icons text-warning fs-2">request_quote</span>
-                        </div>
-                    </div>
-                    <h5 class="card-title mb-1">My Resource Requests</h5>
-                    <p class="card-text text-muted small">Requests your municipality made to others, status, and response times</p>
-                    <div class="mt-2">
-                        <span class="badge bg-warning">Quick Generate</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-6 col-lg-3 d-flex">
-            <div class="card h-100 w-100 border-0 shadow-sm" onclick="generateMyHazardsReport()" style="cursor: pointer; min-height: 220px;">
-                <div class="card-body text-center p-4 d-flex flex-column justify-content-center">
-                    <div class="mb-3">
-                        <div class="bg-danger bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                            <span class="material-icons text-danger fs-2">warning</span>
-                        </div>
-                    </div>
-                    <h5 class="card-title mb-1">My Hazard Reports</h5>
-                    <p class="card-text text-muted small">Hazard incidents in your municipality, risk levels, and response actions</p>
-                    <div class="mt-2">
-                        <span class="badge bg-danger">Quick Generate</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Section Title -->
+    <div class="d-flex align-items-center mb-4 mt-2">
+        <h4 class="fw-bold text-gray-800 mb-0 d-flex align-items-center" style="letter-spacing: -0.5px;">
+            <span class="material-icons text-primary me-2" style="font-size: 26px;">bar_chart</span>
+            My Municipality Analytics
+        </h4>
     </div>
 
-    <!-- Additional Municipality Reports (removed bottom quick generate rows as requested) -->
-
-    <!-- My Municipality Analytics Dashboard -->
+    <!-- Charts Row 1 -->
     <div class="row g-4 mb-4">
         <!-- My Resource Categories -->
         <div class="col-lg-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <span class="material-icons me-2">inventory</span>
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0">
+                    <h6 class="fw-bold text-uppercase text-muted mb-0" style="letter-spacing: 0.5px;">
+                        <span class="material-icons align-middle me-1 text-primary" style="font-size: 18px;">inventory</span>
                         My Resource Categories
-                    </h5>
+                    </h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body pt-2">
                     <div class="chart-container" style="height: 250px;">
                         <canvas id="myResourceChart"></canvas>
                     </div>
@@ -115,14 +110,14 @@
         
         <!-- Resources Borrowed From Us -->
         <div class="col-lg-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <span class="material-icons me-2">swap_horiz</span>
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0">
+                    <h6 class="fw-bold text-uppercase text-muted mb-0" style="letter-spacing: 0.5px;">
+                        <span class="material-icons align-middle me-1 text-info" style="font-size: 18px;">swap_horiz</span>
                         Resources Borrowed From Us
-                    </h5>
+                    </h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body pt-2">
                     <div class="chart-container" style="height: 250px;">
                         <canvas id="borrowedFromUsChart"></canvas>
                     </div>
@@ -132,14 +127,14 @@
         
         <!-- My Resource Requests -->
         <div class="col-lg-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <span class="material-icons me-2">request_quote</span>
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0">
+                    <h6 class="fw-bold text-uppercase text-muted mb-0" style="letter-spacing: 0.5px;">
+                        <span class="material-icons align-middle me-1 text-warning" style="font-size: 18px;">request_quote</span>
                         My Resource Requests
-                    </h5>
+                    </h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body pt-2">
                     <div class="chart-container" style="height: 250px;">
                         <canvas id="myRequestChart"></canvas>
                     </div>
@@ -148,18 +143,18 @@
         </div>
     </div>
 
-    <!-- My Hazard Reports and Resource Sharing Activity -->
+    <!-- Charts Row 2 -->
     <div class="row g-4 mb-4">
         <!-- My Hazard Reports -->
         <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <span class="material-icons me-2">warning</span>
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0">
+                    <h6 class="fw-bold text-uppercase text-muted mb-0" style="letter-spacing: 0.5px;">
+                        <span class="material-icons align-middle me-1 text-danger" style="font-size: 18px;">warning</span>
                         My Hazard Reports
-                    </h5>
+                    </h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body pt-2">
                     <div class="chart-container" style="height: 300px;">
                         <canvas id="myHazardChart"></canvas>
                     </div>
@@ -169,14 +164,14 @@
         
         <!-- Resource Sharing Activity -->
         <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <span class="material-icons me-2">trending_up</span>
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0">
+                    <h6 class="fw-bold text-uppercase text-muted mb-0" style="letter-spacing: 0.5px;">
+                        <span class="material-icons align-middle me-1 text-success" style="font-size: 18px;">trending_up</span>
                         Resource Sharing Activity
-                    </h5>
+                    </h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body pt-2">
                     <div class="chart-container" style="height: 300px;">
                         <canvas id="resourceSharingChart"></canvas>
                     </div>

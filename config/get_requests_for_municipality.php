@@ -41,7 +41,14 @@ try {
             r.returnRequestedAt,
             r.returnedAt,
             r.returnedQty,
+            COALESCE(r.damagedQty, 0) AS damagedQty,
+            r.damageAssessment,
             r.requestGroupId,
+            r.head_approval_status,
+            r.head_approved_by,
+            r.approvingAuthority,
+            r.approverTitle,
+            r.approverSignature,
             from_d.name AS fromMunicipality,
             COALESCE(orig_d.name, to_d.name) AS toMunicipality,
             res.resourceName AS resourceType,
@@ -95,7 +102,14 @@ try {
             'returnRequestedAt' => $r['returnRequestedAt'] ?? null,
             'returnedAt' => $r['returnedAt'] ?? null,
             'returnedQty' => isset($r['returnedQty']) ? (int)$r['returnedQty'] : null,
-            'requestGroupId' => $r['requestGroupId'] ?? null
+            'damagedQty' => (int)($r['damagedQty'] ?? 0),
+            'damageAssessment' => $r['damageAssessment'] ?? null,
+            'requestGroupId' => $r['requestGroupId'] ?? null,
+            'headApprovalStatus' => $r['head_approval_status'] ?? null,
+            'headApprovedBy' => $r['head_approved_by'] ?? null,
+            'approvingAuthority' => $r['approvingAuthority'] ?? null,
+            'approverTitle' => $r['approverTitle'] ?? null,
+            'approverSignature' => $r['approverSignature'] ?? null
         ];
     }, $rows);
 

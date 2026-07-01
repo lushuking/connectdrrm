@@ -98,6 +98,7 @@ try {
                     <span class="user-name"><?php echo htmlspecialchars($is_pdrrmo ? 'ZDS - Admin' : (($welcomeMunicipality ?: 'Municipality') . ' - Admin')); ?></span>
                     <span class="dropdown-arrow">▼</span>
                     <div class="dropdown-menu">
+                        <?php if (!$is_pdrrmo): ?>
                         <a href="#" class="dropdown-item" onclick="openViewProfileModal(); return false;">
                             <span class="material-icons">person</span>
                             Profile
@@ -106,6 +107,7 @@ try {
                             <span class="material-icons">edit</span>
                             Edit Profile
                         </a>
+                        <?php endif; ?>
                         <a href="<?php echo $is_pdrrmo ? 'pdrrmo.php?page=settings' : 'municipality.php?page=settings'; ?>" class="dropdown-item">
                             <span class="material-icons">settings</span>
                             Settings
@@ -1293,13 +1295,17 @@ function saveMunicipalityProfile() {
     try {
         const updateData = {
             drrmoHead: municipalityProfile.drrmoHead || '',
-            drrmoHeadTitle: municipalityProfile.drrmoHeadTitle || ''
+            drrmoHeadTitle: municipalityProfile.drrmoHeadTitle || '',
+            drrmoHeadSignature: municipalityProfile.drrmoHeadSignature || '',
+            clearDrrmoHeadSignature: !municipalityProfile.drrmoHeadSignature
         };
         
         // Only include operator fields if user is not approving_authority
         if (!isApprovingAuthority) {
             updateData.operatorName = municipalityProfile.operatorName || '';
             updateData.operatorTitle = municipalityProfile.operatorTitle || '';
+            updateData.operatorSignature = municipalityProfile.operatorSignature || '';
+            updateData.clearOperatorSignature = !municipalityProfile.operatorSignature;
         }
         
         fetch('config/update_municipality_profile.php', {
@@ -1371,16 +1377,16 @@ function initializeProfileSignatureUploads() {
     const operatorBtn = document.getElementById('operatorSignatureBtn');
     const operatorFile = document.getElementById('operatorSignatureFile');
     if (operatorBtn && operatorFile) {
-        operatorBtn.addEventListener('click', () => operatorFile.click());
-        operatorFile.addEventListener('change', (e) => handleProfileSignatureUpload(e, 'operator'));
+        operatorBtn.onclick = () => operatorFile.click();
+        operatorFile.onchange = (e) => handleProfileSignatureUpload(e, 'operator');
     }
     
     // DRRMO Head signature
     const drrmoHeadBtn = document.getElementById('drrmoHeadSignatureBtn');
     const drrmoHeadFile = document.getElementById('drrmoHeadSignatureFile');
     if (drrmoHeadBtn && drrmoHeadFile) {
-        drrmoHeadBtn.addEventListener('click', () => drrmoHeadFile.click());
-        drrmoHeadFile.addEventListener('change', (e) => handleProfileSignatureUpload(e, 'drrmoHead'));
+        drrmoHeadBtn.onclick = () => drrmoHeadFile.click();
+        drrmoHeadFile.onchange = (e) => handleProfileSignatureUpload(e, 'drrmoHead');
     }
 }
 

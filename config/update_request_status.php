@@ -6,20 +6,7 @@ require_once __DIR__ . '/auth.php';
 header('Content-Type: application/json; charset=utf-8');
 
 $__agentLog = function(string $hypothesisId, string $location, string $message, array $data = []) {
-    // #region agent log
-    try {
-        $entry = [
-            'sessionId' => 'fb4743',
-            'runId' => 'pre-fix',
-            'hypothesisId' => $hypothesisId,
-            'location' => $location,
-            'message' => $message,
-            'data' => $data,
-            'timestamp' => (int)(microtime(true) * 1000),
-        ];
-        @file_put_contents(__DIR__ . '/../debug-fb4743.log', json_encode($entry) . PHP_EOL, FILE_APPEND);
-    } catch (Throwable $_) {}
-    // #endregion agent log
+    // no-op
 };
 
 $ts = (int)(microtime(true) * 1000);
@@ -154,11 +141,19 @@ try {
         error_log("Error checking/altering status ENUM before transaction: " . $e->getMessage());
     }
     
+    // Fetch current user position and signature
+    $userStmt = $pdo->prepare('SELECT position, signature FROM users WHERE userID = ? LIMIT 1');
+    $userStmt->execute([$_SESSION['user_id']]);
+    $userProfile = $userStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    $approverTitle = $userProfile['position'] ?? '';
+    $approverSignature = $userProfile['signature'] ?? '';
+    
     // Transaction: handle Head approval or regular approval
     $pdo->beginTransaction();
     try {
         if ($isHeadApproval) {
             // This is a Head approval request
+            $approvalType = ($userRole === 'approving_authority') ? 'approved' : 'bypassed';
             if ($action === 'accept') {
                 // Head approved: forward to provider municipality
                 $originalToDRRMO = isset($req['originalToDRRMO']) && !empty($req['originalToDRRMO']) ? (int)$req['originalToDRRMO'] : null;
@@ -234,8 +229,8 @@ try {
                         if ($allOtherEvaluated) {
                             // This is the last request to be evaluated
                             // First, mark this request as approved (intermediate status)
-                            $upd = $pdo->prepare('UPDATE requests SET status = ? WHERE requestID = ?');
-                            $upd->execute(['group_approved_pending', $requestId]);
+                            $upd = $pdo->prepare('UPDATE requests SET status = ?, head_approval_status = ?, head_approved_by = ?, approverTitle = ?, approverSignature = ? WHERE requestID = ?');
+                            $upd->execute(['group_approved_pending', $approvalType, $_SESSION['full_name'] ?? 'System', $approverTitle, $approverSignature, $requestId]);
                             
                             // Now check if all requests in the group were approved (none were rejected)
                             // Re-fetch to get the updated status
@@ -261,7 +256,7 @@ try {
                                 error_log("Head approved all requests in group $requestGroupId. Forwarding to provider municipality $originalToDRRMO");
                             } else {
                                 // At least one request in the group was rejected, reject the entire group
-                                $upd = $pdo->prepare('UPDATE requests SET status = ? WHERE requestGroupId = ?');
+                                $upd = $pdo->prepare('UPDATE requests SET status = ?, responseDate = NOW() WHERE requestGroupId = ?');
                                 $upd->execute(['rejected', $requestGroupId]);
                                 $newStatus = 'rejected';
                                 $__agentLog('H1', 'config/update_request_status.php:groupFinalize(accept)', 'Rejected entire group due to at least one rejected', [
@@ -276,8 +271,8 @@ try {
                             // Note: ENUM column was already checked and altered before transaction started
                             $statusValue = 'group_approved_pending';
                             
-                            $upd = $pdo->prepare('UPDATE requests SET status = ? WHERE requestID = ?');
-                            $updateResult = $upd->execute([$statusValue, $requestId]);
+                            $upd = $pdo->prepare('UPDATE requests SET status = ?, head_approval_status = ?, head_approved_by = ?, approverTitle = ?, approverSignature = ? WHERE requestID = ?');
+                            $updateResult = $upd->execute([$statusValue, $approvalType, $_SESSION['full_name'] ?? 'System', $approverTitle, $approverSignature, $requestId]);
                             $rowsAffected = $upd->rowCount();
                             $errorInfo = $upd->errorInfo();
                             $newStatus = $statusValue;
@@ -286,7 +281,7 @@ try {
                                 error_log("ERROR: UPDATE failed for request $requestId. Error: " . json_encode($errorInfo));
                                 // Try direct SQL as fallback
                                 try {
-                                    $directSql = "UPDATE requests SET status = " . $pdo->quote($statusValue) . " WHERE requestID = " . (int)$requestId;
+                                    $directSql = "UPDATE requests SET status = " . $pdo->quote($statusValue) . ", head_approval_status = " . $pdo->quote($approvalType) . ", head_approved_by = " . $pdo->quote($_SESSION['full_name'] ?? 'System') . ", approverTitle = " . $pdo->quote($approverTitle) . ", approverSignature = " . $pdo->quote($approverSignature) . " WHERE requestID = " . (int)$requestId;
                                     $directResult = $pdo->exec($directSql);
                                     error_log("Direct SQL UPDATE fallback result: rows affected = " . $directResult);
                                 } catch (PDOException $e) {
@@ -317,16 +312,16 @@ try {
                         }
                     } else {
                         // Single request (not in group) - forward to provider municipality with status 'pending'
-                        $upd = $pdo->prepare('UPDATE requests SET toDRRMO = ?, status = ?, originalToDRRMO = NULL WHERE requestID = ?');
-                        $upd->execute([$originalToDRRMO, 'pending', $requestId]);
+                        $upd = $pdo->prepare('UPDATE requests SET toDRRMO = ?, status = ?, originalToDRRMO = NULL, head_approval_status = ?, head_approved_by = ?, approverTitle = ?, approverSignature = ? WHERE requestID = ?');
+                        $upd->execute([$originalToDRRMO, 'pending', $approvalType, $_SESSION['full_name'] ?? 'System', $approverTitle, $approverSignature, $requestId]);
                         $newStatus = 'pending'; // Status is now pending at provider
                         
                         error_log("Head approved request $requestId. Forwarding to provider municipality $originalToDRRMO");
                     }
                 } else {
                     // No original provider (shouldn't happen, but handle gracefully)
-                    $upd = $pdo->prepare('UPDATE requests SET status = ? WHERE requestID = ?');
-                    $upd->execute(['approved', $requestId]);
+                    $upd = $pdo->prepare('UPDATE requests SET status = ?, responseDate = NOW(), head_approval_status = ?, head_approved_by = ?, approverTitle = ?, approverSignature = ? WHERE requestID = ?');
+                    $upd->execute(['approved', $approvalType, $_SESSION['full_name'] ?? 'System', $approverTitle, $approverSignature, $requestId]);
                     $newStatus = 'approved';
                 }
             } else {
@@ -370,7 +365,7 @@ try {
                         $upd->execute(['group_rejected_pending', $requestId]);
                         
                         // Since at least one request was rejected, reject the entire group
-                        $upd = $pdo->prepare('UPDATE requests SET status = ? WHERE requestGroupId = ?');
+                        $upd = $pdo->prepare('UPDATE requests SET status = ?, responseDate = NOW() WHERE requestGroupId = ?');
                         $upd->execute(['rejected', $requestGroupId]);
                         $newStatus = 'rejected';
                         $__agentLog('H1', 'config/update_request_status.php:groupFinalize(reject)', 'Rejected entire group (all evaluated after this reject)', [
@@ -420,7 +415,7 @@ try {
                     }
                 } else {
                     // Single request (not in group) - set status to rejected
-                    $upd = $pdo->prepare('UPDATE requests SET status = ? WHERE requestID = ?');
+                    $upd = $pdo->prepare('UPDATE requests SET status = ?, responseDate = NOW() WHERE requestID = ?');
                     $upd->execute(['rejected', $requestId]);
                     $newStatus = 'rejected';
                 }
@@ -437,11 +432,58 @@ try {
                     $pdo->rollBack();
                     $err('insufficient_stock', 'Insufficient stock to accept', 409);
                 }
+
+                // Sync itemized units if present
+                $itemCountStmt = $pdo->prepare("SELECT COUNT(*) FROM resource_items WHERE resourceID = ?");
+                $itemCountStmt->execute([(int)$req['resourceID']]);
+                $hasItems = $itemCountStmt->fetchColumn() > 0;
+
+                if ($hasItems) {
+                    $itemIDs = $body['dispatchedItems'] ?? [];
+                    if (!is_array($itemIDs)) {
+                        $itemIDs = [];
+                    }
+
+                    if (count($itemIDs) !== (int)$req['quantity']) {
+                        $pdo->rollBack();
+                        $err('items_required', 'You must select exactly ' . $req['quantity'] . ' itemized units for dispatch.', 400);
+                    }
+                    
+                    // Verify that selected items belong to this resource and are Available
+                    $placeholders = implode(',', array_fill(0, count($itemIDs), '?'));
+                    $verifySql = "SELECT itemID, status FROM resource_items WHERE itemID IN ($placeholders) AND resourceID = ?";
+                    $params = array_merge($itemIDs, [(int)$req['resourceID']]);
+                    $verifyStmt = $pdo->prepare($verifySql);
+                    $verifyStmt->execute($params);
+                    $verifiedItems = $verifyStmt->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    if (count($verifiedItems) !== count($itemIDs)) {
+                        $pdo->rollBack();
+                        $err('invalid_items', 'One or more selected itemized units are invalid or do not belong to this resource.', 400);
+                    }
+                    
+                    foreach ($verifiedItems as $vItem) {
+                        if ($vItem['status'] !== 'Available') {
+                            $pdo->rollBack();
+                            $err('item_not_available', 'One or more selected units are no longer available.', 400);
+                        }
+                    }
+                    
+                    // Insert into request_dispatched_items
+                    $insertRdi = $pdo->prepare("INSERT INTO request_dispatched_items (requestID, itemID) VALUES (?, ?)");
+                    // Update status in resource_items
+                    $updateRi = $pdo->prepare("UPDATE resource_items SET status = 'In Use' WHERE itemID = ?");
+                    
+                    foreach ($itemIDs as $itemId) {
+                        $insertRdi->execute([$requestId, $itemId]);
+                        $updateRi->execute([$itemId]);
+                    }
+                }
             }
 
-            // Update status
-            $upd = $pdo->prepare('UPDATE requests SET status = ? WHERE requestID = ?');
-            $upd->execute([$newStatus, $requestId]);
+            // Update status, responseDate, and approver details
+            $upd = $pdo->prepare('UPDATE requests SET status = ?, responseDate = NOW(), approvingAuthority = ?, approverTitle = ?, approverSignature = ? WHERE requestID = ?');
+            $upd->execute([$newStatus, $_SESSION['full_name'] ?? 'System', $approverTitle, $approverSignature, $requestId]);
         }
 
         $pdo->commit();

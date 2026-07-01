@@ -3,14 +3,14 @@
 
 
     <!-- Filters and Search -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);">
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body p-4">
             <div class="row g-4 align-items-end">
                 <div class="col-md-3">
-                    <label for="statusFilter" class="form-label text-uppercase text-muted fw-bold mb-2" style="font-size: 0.75rem; letter-spacing: 1px;">Status</label>
+                    <label for="statusFilter" class="form-label text-uppercase text-muted fw-bold mb-2">Status</label>
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0 rounded-start-pill ps-3"><span class="material-icons text-muted" style="font-size: 18px;">assignment_turned_in</span></span>
-                        <select class="form-select border-start-0 rounded-end-pill py-2" id="statusFilter" onchange="filterRequests()" style="cursor:pointer;">
+                        <select class="form-select border-start-0 rounded-end-pill py-2" id="statusFilter">
                             <option value="">All Status</option>
                             <option value="pending">Pending</option>
                             <option value="approved">Approved</option>
@@ -21,10 +21,10 @@
                 </div>
                 
                 <div class="col-md-3">
-                    <label for="municipalityFilter" class="form-label text-uppercase text-muted fw-bold mb-2" style="font-size: 0.75rem; letter-spacing: 1px;">Municipality</label>
+                    <label for="municipalityFilter" class="form-label text-uppercase text-muted fw-bold mb-2">Municipality</label>
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0 rounded-start-pill ps-3"><span class="material-icons text-muted" style="font-size: 18px;">location_city</span></span>
-                        <select class="form-select border-start-0 rounded-end-pill py-2" id="municipalityFilter" onchange="filterRequests()" style="cursor:pointer;">
+                        <select class="form-select border-start-0 rounded-end-pill py-2" id="municipalityFilter">
                             <option value="">All Municipalities</option>
                             <!-- Options will be populated dynamically -->
                         </select>
@@ -32,10 +32,10 @@
                 </div>
                 
                 <div class="col-md-3">
-                    <label for="priorityFilter" class="form-label text-uppercase text-muted fw-bold mb-2" style="font-size: 0.75rem; letter-spacing: 1px;">Priority</label>
+                    <label for="priorityFilter" class="form-label text-uppercase text-muted fw-bold mb-2">Priority</label>
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0 rounded-start-pill ps-3"><span class="material-icons text-muted" style="font-size: 18px;">flag</span></span>
-                        <select class="form-select border-start-0 rounded-end-pill py-2" id="priorityFilter" onchange="filterRequests()" style="cursor:pointer;">
+                        <select class="form-select border-start-0 rounded-end-pill py-2" id="priorityFilter">
                             <option value="">All Priorities</option>
                             <option value="high">High</option>
                             <option value="medium">Medium</option>
@@ -45,9 +45,9 @@
                 </div>
                 
                 <div class="col-md-3">
-                    <label for="searchInput" class="form-label text-uppercase text-muted fw-bold mb-2" style="font-size: 0.75rem; letter-spacing: 1px;">Search</label>
+                    <label for="searchInput" class="form-label text-uppercase text-muted fw-bold mb-2">Search</label>
                     <div class="input-group">
-                        <input type="text" class="form-control rounded-start-pill py-2 ps-3" id="searchInput" placeholder="Search requests..." onkeyup="searchRequests()">
+                        <input type="text" class="form-control rounded-start-pill py-2 ps-3" id="searchInput" placeholder="Search requests...">
                         <span class="input-group-text bg-white rounded-end-pill pe-3">
                             <span class="material-icons text-primary">search</span>
                         </span>

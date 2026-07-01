@@ -97,8 +97,8 @@ if (isset($rawHazards)) {
         if (!empty($hazard['imagePaths'])) {
             $images = array_values(array_filter(explode('||', (string)$hazard['imagePaths'])));
         }
-        $affectedVal = isset($hazard['affectedPopulation']) ? (int)$hazard['affectedPopulation'] : 0;
-        if ($affectedVal <= 0) {
+        $affectedVal = isset($hazard['affectedPopulation']) ? $hazard['affectedPopulation'] : '';
+        if ($affectedVal === '' || $affectedVal === '0' || $affectedVal === 0 || $affectedVal === null) {
             $affectedVal = computePopulationSumFromLocation($hazard['location'] ?? '', $populationIndex);
         }
         $hazards[] = [
@@ -127,7 +127,28 @@ if (isset($rawHazards)) {
     // Calculate metrics
     $activeHazards = count(array_filter($hazards, function($h) { return $h['status'] === 'active'; }));
     $criticalAlerts = count(array_filter($hazards, function($h) { return $h['severity'] === 'critical'; }));
-    $peopleAffected = array_sum(array_column($hazards, 'affected'));
+    
+    $peopleAffected = 0;
+    $peopleAffectedDescs = [];
+    foreach ($hazards as $h) {
+        $val = $h['affected'];
+        if (empty($val)) continue;
+        $num = (int)$val;
+        if ($num > 0) {
+            $peopleAffected += $num;
+            $desc = trim(preg_replace('/^\d+\s*/', '', (string)$val));
+            if (!empty($desc)) {
+                $peopleAffectedDescs[] = $num . ' ' . $desc;
+            }
+        } else {
+            $peopleAffectedDescs[] = (string)$val;
+        }
+    }
+    $peopleAffectedDescStr = '';
+    if (!empty($peopleAffectedDescs)) {
+        $uniqueDescs = array_unique($peopleAffectedDescs);
+        $peopleAffectedDescStr = '(' . implode(', ', array_slice($uniqueDescs, 0, 3)) . (count($uniqueDescs) > 3 ? '...' : '') . ')';
+    }
 }
 ?>
 
@@ -163,6 +184,67 @@ console.log('Current user ID:', window.currentUserId);
         </button>
     </div>
 
+    <!-- Collapsible How to Report Guide -->
+    <div class="card mb-4" id="howToReportGuide" style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-top: 20px;">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center" style="cursor: pointer; padding: 12px 20px;" onclick="toggleHowToReportGuide()">
+            <h5 class="mb-0 d-flex align-items-center" style="font-size: 15px; font-weight: 600; color: #1e293b;">
+                <span class="material-icons me-2" style="font-size: 20px; color: #3b82f6;">help_outline</span>
+                How to Report Hazards
+            </h5>
+            <span class="material-icons" id="howToReportGuideIcon" style="color: #64748b;">expand_more</span>
+        </div>
+        <div class="card-body" id="howToReportGuideContent" style="display: none; padding: 20px; background: #fff;">
+            <div class="row">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; min-width: 28px; font-weight: bold; margin-right: 12px; font-size: 13px;">1</div>
+                        <div>
+                            <h6 class="mb-1" style="font-size: 14px; font-weight: 600; color: #1e293b;">Pin Location on Map</h6>
+                            <p class="text-muted mb-0 small">Click or pin directly on the map to automatically populate the latitude & longitude coordinates. This ensures maximum reporting precision.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; min-width: 28px; font-weight: bold; margin-right: 12px; font-size: 13px;">2</div>
+                        <div>
+                            <h6 class="mb-1" style="font-size: 14px; font-weight: 600; color: #1e293b;">Open Report Dialog</h6>
+                            <p class="text-muted mb-0 small">Click the "Report Hazard" button at the top-right to open the creation form.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; min-width: 28px; font-weight: bold; margin-right: 12px; font-size: 13px;">3</div>
+                        <div>
+                            <h6 class="mb-1" style="font-size: 14px; font-weight: 600; color: #1e293b;">Fill Incident Details</h6>
+                            <p class="text-muted mb-0 small">Select the hazard type, intensity, and input the affected population / impact description. The pinned coordinates are already filled in for you!</p>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; min-width: 28px; font-weight: bold; margin-right: 12px; font-size: 13px;">4</div>
+                        <div>
+                            <h6 class="mb-1" style="font-size: 14px; font-weight: 600; color: #1e293b;">Submit & Publish</h6>
+                            <p class="text-muted mb-0 small">Save the report. The new hazard will instantly show up on the map and update the active metrics cards.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function toggleHowToReportGuide() {
+        const content = document.getElementById('howToReportGuideContent');
+        const icon = document.getElementById('howToReportGuideIcon');
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            icon.textContent = 'expand_less';
+        } else {
+            content.style.display = 'none';
+            icon.textContent = 'expand_more';
+        }
+    }
+    </script>
+
     <!-- Metrics Cards -->
     <div class="hazard-metrics">
         <div class="metric-card">
@@ -180,7 +262,8 @@ console.log('Current user ID:', window.currentUserId);
             </div>
             <div class="metric-content">
                 <h3>Population Affected</h3>
-                <span class="metric-number" id="peopleAffected"><?php echo number_format($peopleAffected); ?></span>
+                <span class="metric-number" id="peopleAffectedCount"><?php echo number_format($peopleAffected); ?></span>
+                <div class="metric-desc" id="peopleAffectedDesc" style="font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 4px; line-height: 1.2;<?php echo empty($peopleAffectedDescStr) ? ' display: none;' : ''; ?>"><?php echo htmlspecialchars($peopleAffectedDescStr); ?></div>
             </div>
         </div>
         <div class="metric-card">
@@ -251,6 +334,9 @@ console.log('Current user ID:', window.currentUserId);
                     <button class="btn btn-primary btn-sm" id="toggleMapView" title="Toggle Map View">
                         <span class="material-icons me-1">map</span>
                         Show
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" id="fullscreenMapBtn" title="Toggle Fullscreen Map" style="display: flex; align-items: center; justify-content: center; padding: 0 8px;">
+                        <span class="material-icons">fullscreen</span>
                     </button>
                 </div>
             </div>
@@ -423,57 +509,53 @@ console.log('Current user ID:', window.currentUserId);
                 <div class="form-section location-section">
                     <div class="section-header">
                         <span class="material-icons">location_on</span>
-                        <h3>Affected Locations</h3>
-                        <span class="section-badge">Multiple Selection</span>
+                        <h3>Affected Location</h3>
                     </div>
                     
                     <div class="form-group enhanced-form-group">
                         <label for="hazardLocation" class="enhanced-label">
-                            <span class="material-icons">search</span>
-                            <span class="label-text">Search & Select Locations</span>
+                            <span class="material-icons">place</span>
+                            <span class="label-text">Location Description / Area Name</span>
                             <span class="required-indicator">*</span>
                         </label>
-                        <div class="location-input-container enhanced-input-container">
-                            <input type="text" id="hazardLocation" name="hazardLocation" 
-                                   placeholder="Type to search barangays and municipalities..." 
-                                   autocomplete="off" class="enhanced-input">
-                            <div class="input-hint">
-                                <span class="material-icons">lightbulb</span>
-                                <span>Tip: Select multiple locations for hazards affecting multiple areas</span>
-                            </div>
-                            
-                            <!-- Hidden fields for coordinates -->
-                            <input type="hidden" id="hazardLatitude" name="hazardLatitude">
-                            <input type="hidden" id="hazardLongitude" name="hazardLongitude">
-                            
-                            <!-- Location suggestions dropdown -->
-                            <div id="locationDropdown" class="location-dropdown"></div>
-                            
-                            <!-- Coordinate display -->
-                            <div class="coordinate-display" id="coordinateDisplay" style="display: none;">
-                                <div class="coordinate-info">
-                                    <span class="material-icons">my_location</span>
-                                    <span class="coordinate-label">Center Point:</span>
-                                    <span id="coordinateText">Not set</span>
-                                </div>
-                                <button type="button" class="btn-clear-coords" id="clearCoordinates" title="Clear all locations">
-                                    <span class="material-icons">clear</span>
-                                    <span>Clear All</span>
-                                </button>
+                        <div class="input-wrapper">
+                            <input type="text" id="hazardLocation" name="hazardLocation" required 
+                                   placeholder="e.g. Upper Campo Islam, Pagadian City" class="enhanced-input">
+                            <span class="input-icon material-icons">map</span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group enhanced-form-group">
+                            <label for="hazardLatitude" class="enhanced-label">
+                                <span class="material-icons">navigation</span>
+                                <span class="label-text">Latitude</span>
+                                <span class="required-indicator">*</span>
+                            </label>
+                            <div class="input-wrapper">
+                                <input type="number" step="any" id="hazardLatitude" name="hazardLatitude" required 
+                                       placeholder="e.g. 7.8258" class="enhanced-input">
+                                <span class="input-icon material-icons">my_location</span>
                             </div>
                         </div>
-                        
-                        <!-- Selected locations display -->
-                        <div id="selectedLocationsContainer" class="selected-locations-container" style="display: none;">
-                            <div class="selected-locations-header">
-                                <div class="header-content">
-                                    <span class="material-icons">place</span>
-                                    <span class="header-text">Selected Locations</span>
-                                    <span class="location-count">0</span>
-                                </div>
+
+                        <div class="form-group enhanced-form-group">
+                            <label for="hazardLongitude" class="enhanced-label">
+                                <span class="material-icons">navigation</span>
+                                <span class="label-text">Longitude</span>
+                                <span class="required-indicator">*</span>
+                            </label>
+                            <div class="input-wrapper">
+                                <input type="number" step="any" id="hazardLongitude" name="hazardLongitude" required 
+                                       placeholder="e.g. 123.4370" class="enhanced-input">
+                                <span class="input-icon material-icons">my_location</span>
                             </div>
-                            <div class="selected-locations-list"></div>
                         </div>
+                    </div>
+                    
+                    <div class="input-hint" style="margin-top: 12px; display: flex; align-items: center; gap: 6px; font-size: 11px; color: rgba(255,255,255,0.5);">
+                        <span class="material-icons" style="color: #60a5fa; font-size: 14px;">lightbulb</span>
+                        <span>Tip: Click/Pin directly on the map to automatically populate the latitude & longitude coordinates.</span>
                     </div>
                 </div>
                 
@@ -500,82 +582,25 @@ console.log('Current user ID:', window.currentUserId);
                         <div class="form-group enhanced-form-group">
                             <label for="peopleAffected" class="enhanced-label">
                                 <span class="material-icons">people</span>
-                                <span class="label-text">People Affected</span>
+                                <span class="label-text">Affected / Impact Description</span>
                                 <span class="required-indicator">*</span>
                             </label>
                             <div class="input-wrapper">
-                                <input type="number" id="peopleAffected" name="peopleAffected" 
-                                       placeholder="Enter total people affected..." 
-                                       min="0" class="enhanced-input" required>
+                                <input type="text" id="peopleAffected" name="peopleAffected" 
+                                       placeholder="e.g. 50 houses, 100 families, or number" 
+                                       class="enhanced-input" required>
                                 <span class="input-icon material-icons">people</span>
                             </div>
                             <div class="input-hint">
                                 <span class="material-icons">info</span>
-                                <span>Please provide an estimate of the total population affected by this hazard.</span>
+                                <span>Please provide an estimate of the total population, houses, or area affected by this hazard.</span>
                             </div>
                             <small id="populationHelper" class="text-muted" style="display: none;"></small>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Details Section -->
-                <div class="form-section details-section">
-                    <div class="section-header">
-                        <span class="material-icons">description</span>
-                        <h3>Additional Information</h3>
-                    </div>
 
-
-                    <div class="form-row">
-                        <div class="form-group enhanced-form-group">
-                            <label for="hazardSource" class="enhanced-label">
-                                <span class="material-icons">source</span>
-                                <span class="label-text">Information Source</span>
-                                <span class="required-indicator">*</span>
-                            </label>
-                            <div class="select-wrapper">
-                                <select id="hazardSource" name="hazardSource" required class="enhanced-select" onchange="document.getElementById('otherSourceGroup').style.display = this.value === 'other' ? 'block' : 'none'; document.getElementById('otherHazardSource').required = this.value === 'other';">
-                                    <option value="">Choose information source...</option>
-                                    <option value="direct-observation">👁️ Direct Observation</option>
-                                    <option value="citizen-report">👤 Citizen Report</option>
-                                    <option value="government-agency">🏛️ Government Agency</option>
-                                    <option value="media-report">📺 Media Report</option>
-                                    <option value="satellite-data">🛰️ Satellite Data</option>
-                                    <option value="other">📋 Other</option>
-                                </select>
-                                <span class="select-arrow material-icons">keyboard_arrow_down</span>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group enhanced-form-group">
-                            <label for="contactInfo" class="enhanced-label">
-                                <span class="material-icons">contact_phone</span>
-                                <span class="label-text">Contact Information</span>
-                                <span class="optional-badge">Optional</span>
-                            </label>
-                            <div class="input-wrapper">
-                                <input type="text" id="contactInfo" name="contactInfo" 
-                                       placeholder="Your contact number or email for follow-up" 
-                                       class="enhanced-input">
-                                <span class="input-icon material-icons">phone</span>
-                            </div>
-                        </div>
-
-                        <div class="form-group enhanced-form-group" id="otherSourceGroup" style="display: none; flex: 1 1 100%;">
-                            <label for="otherHazardSource" class="enhanced-label">
-                                <span class="material-icons">edit</span>
-                                <span class="label-text">Specify Other Source</span>
-                                <span class="required-indicator">*</span>
-                            </label>
-                            <div class="input-wrapper">
-                                <input type="text" id="otherHazardSource" name="otherHazardSource" 
-                                       placeholder="Enter the information source..." 
-                                       class="enhanced-input">
-                                <span class="input-icon material-icons">edit</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Attachments Section -->
                 <div class="form-section details-section">
@@ -705,8 +730,8 @@ console.log('Current user ID:', window.currentUserId);
                 
                 <!-- People Affected -->
                 <div class="form-group">
-                    <label for="edit_peopleAffected">People Affected</label>
-                    <input type="number" id="edit_peopleAffected" name="peopleAffected" min="0">
+                    <label for="edit_peopleAffected">Affected / Impact Description</label>
+                    <input type="text" id="edit_peopleAffected" name="peopleAffected" placeholder="e.g. 50 houses, 100 families, or number">
                 </div>
                 
                 <!-- Other Hazard Type -->
@@ -765,3 +790,87 @@ console.log('Current user ID:', window.currentUserId);
         </div>
     </div>
 </div>
+
+<style>
+/* Fullscreen Map Styles */
+.hazard-map-section.fullscreen-active {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 99999 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    background: #1e293b;
+}
+.hazard-map-section.fullscreen-active #hazardMap {
+    height: 100vh !important;
+    border-radius: 0 !important;
+}
+.hazard-map-section.fullscreen-active .hazard-map-header {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    z-index: 10001;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 8px 16px;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.12);
+    width: auto !important;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.hazard-map-section.fullscreen-active .hazard-map-header .hazard-map-title {
+    color: #fff !important;
+    margin: 0 !important;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Layer Control customization */
+.leaflet-control-layers {
+    background: rgba(15, 23, 42, 0.85) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    border-radius: 8px !important;
+    color: #f1f5f9 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+}
+.leaflet-control-layers-list {
+    padding: 4px;
+}
+.map-control-layer-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 2px 0;
+}
+.leaflet-control-layers-selector {
+    margin-top: 0 !important;
+    accent-color: #3b82f6;
+}
+
+/* Styling Leaflet custom zoom buttons to match theme */
+.leaflet-bar {
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+}
+.leaflet-bar a {
+    background-color: rgba(15, 23, 42, 0.85) !important;
+    color: #f1f5f9 !important;
+    border-bottom: 1px solid rgba(255,255,255,0.12) !important;
+}
+.leaflet-bar a:hover {
+    background-color: rgba(30, 41, 59, 0.95) !important;
+    color: #fff !important;
+}
+</style>

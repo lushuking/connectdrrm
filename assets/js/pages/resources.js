@@ -162,12 +162,24 @@ class ResourcesPage {
         }
         // If page size selector is removed from UI, keep internal state as default and ignore
         
-        // Modal close on backdrop click
+        // Modal backdrop close
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
                 this.closeAllModals();
             }
         });
+
+        // Real-time status badge update in Modal
+        const avStock = document.getElementById('availableStock');
+        const dmgStock = document.getElementById('damagedStock');
+        const minStock = document.getElementById('minimumStock');
+        const totalStock = document.getElementById('totalStock');
+        const resName = document.getElementById('resourceName');
+        if (avStock) avStock.addEventListener('input', () => this.updateModalStatusBadge());
+        if (dmgStock) dmgStock.addEventListener('input', () => this.updateModalStatusBadge());
+        if (minStock) minStock.addEventListener('input', () => this.updateModalStatusBadge());
+        if (totalStock) totalStock.addEventListener('input', () => this.updateItemizedUnitsForm());
+        if (resName) resName.addEventListener('input', () => this.updateItemizedUnitsForm());
     }
     
     setupFilters() {
@@ -595,7 +607,22 @@ class ResourcesPage {
         tableBody.innerHTML = resourcesToRender.map(resource => `
             <tr>
                 <td>
-                    <strong>${resource.name}</strong>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        ${resource.items && resource.items.length > 0 ? `
+                            <button type="button" class="btn btn-link btn-sm p-0 toggle-items-btn" onclick="resourcesPage.toggleItems(this, ${resource.id})" style="color: var(--primary-color); display: inline-flex; align-items: center; justify-content: center; text-decoration: none; border: none; background: none;">
+                                <span class="material-icons" style="font-size: 20px; transition: transform 0.2s; color: var(--primary-color);">keyboard_arrow_right</span>
+                            </button>
+                        ` : ''}
+                        <div>
+                            <div style="font-weight: 600; color: var(--text-dark);">${resource.name}</div>
+                            ${resource.plateNumber ? `
+                                <div class="text-muted" style="font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0; font-family: monospace;">
+                                    <span class="material-icons" style="font-size: 12px;">badge</span>
+                                    ${resource.plateNumber}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
                 </td>
                 <td>${resource.subcategory || resource.category || 'N/A'}</td>
                 <td>
@@ -605,9 +632,19 @@ class ResourcesPage {
                     </div>
                 </td>
                 <td>
-                    <span class="status-badge ${this.getResourceStatus(resource) === 'Available' ? 'badge-available' : this.getResourceStatus(resource) === 'Low Stock' ? 'badge-low' : 'badge-out'}">
+                    ${(resource.damagedStock > 0)
+                        ? `<span class="badge bg-danger">${resource.damagedStock} Damaged</span>`
+                        : '<span class="text-muted small">None</span>'}
+                </td>
+                <td>
+                    <span class="status-badge ${this.getResourceStatus(resource) === 'Available' ? 'badge-available' : this.getResourceStatus(resource) === 'Low Stock' ? 'badge-low' : this.getResourceStatus(resource) === 'Damaged / Repairing' ? 'badge-repairing' : 'badge-out'}">
                         ${this.getResourceStatus(resource)}
                     </span>
+                    ${((this.getResourceStatus(resource) === 'Out of Stock' || this.getResourceStatus(resource) === 'Unavailable') && resource.nextAvailableDate) ? `
+                        <div class="text-muted mt-1" style="font-size: 0.72rem; line-height: 1.1; font-weight: 500;">
+                            Available: ${this.formatDate(resource.nextAvailableDate)}
+                        </div>
+                    ` : ''}
                 </td>
                 <td>${this.formatDate(resource.lastUpdated)}</td>
                 <td>
@@ -625,6 +662,55 @@ class ResourcesPage {
                     </div>
                 </td>
             </tr>
+            ${resource.items && resource.items.length > 0 ? `
+                <tr id="items-row-${resource.id}" class="resource-items-row" style="display: none; background-color: #fafbfc;">
+                    <td colspan="7" style="padding: 12px 24px;">
+                        <div style="border-left: 3px solid #cbd5e1; padding-left: 16px; margin: 4px 0;">
+                            <div style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                <span>Itemized Units (${resource.items.length})</span>
+                                ${isOwnMunicipality ? `
+                                    <button class="btn btn-link btn-sm p-0" onclick="resourcesPage.manageItems(${resource.id})" style="font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; font-weight: 500; border: none; background: none; color: var(--primary-color);">
+                                        <span class="material-icons" style="font-size: 14px;">settings</span> Manage Units
+                                    </button>
+                                ` : ''}
+                            </div>
+                            <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 6px; background: #ffffff; overflow: hidden;">
+                                <table class="table table-sm table-borderless m-0" style="font-size: 0.85rem; width: 100%;">
+                                    <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                        <tr>
+                                            <th style="padding: 6px 12px; color: #475569; font-weight: 600; text-align: left;">Plate No. / Serial No. / ID</th>
+                                            <th style="padding: 6px 12px; color: #475569; font-weight: 600; text-align: left;">Status</th>
+                                            <th style="padding: 6px 12px; color: #475569; font-weight: 600; text-align: left;">Storage Location</th>
+                                            <th style="padding: 6px 12px; color: #475569; font-weight: 600; text-align: left;">Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${resource.items.map(item => `
+                                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                                <td style="padding: 8px 12px; font-family: monospace; font-weight: 500; text-align: left;">
+                                                    <span class="material-icons" style="font-size: 14px; vertical-align: middle; margin-right: 4px; color: #64748b;">badge</span>
+                                                    ${item.uniqueIdentifier}
+                                                </td>
+                                                <td style="padding: 8px 12px; text-align: left;">
+                                                    <span class="badge ${item.status === 'Available' ? 'bg-success' : item.status === 'Damaged / Repairing' ? 'bg-warning text-dark' : 'bg-secondary'}" style="font-size: 0.72rem; padding: 2px 6px;">
+                                                        ${item.status}
+                                                    </span>
+                                                </td>
+                                                <td style="padding: 8px 12px; color: #334155; text-align: left;">
+                                                    ${item.storageLocation || '<span class="text-muted italic">Not specified</span>'}
+                                                </td>
+                                                <td style="padding: 8px 12px; color: #64748b; font-style: italic; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left;" title="${item.conditionNotes || ''}">
+                                                    ${item.conditionNotes || '-'}
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            ` : ''}
         `).join('');
     }
     
@@ -654,8 +740,8 @@ class ResourcesPage {
                     case 'qty_asc':
                         return compareNum((a.quantity||0), (b.quantity||0));
                     case 'status': {
-                        const va = this.getResourceStatus(a) === 'Available' ? 0 : (this.getResourceStatus(a) === 'Low Stock' ? 1 : 2);
-                        const vb = this.getResourceStatus(b) === 'Available' ? 0 : (this.getResourceStatus(b) === 'Low Stock' ? 1 : 2);
+                        const va = this.getResourceStatus(a) === 'Available' ? 0 : (this.getResourceStatus(a) === 'Low Stock' ? 1 : this.getResourceStatus(a) === 'Damaged / Repairing' ? 2 : 3);
+                        const vb = this.getResourceStatus(b) === 'Available' ? 0 : (this.getResourceStatus(b) === 'Low Stock' ? 1 : this.getResourceStatus(b) === 'Damaged / Repairing' ? 2 : 3);
                         if (va !== vb) return va - vb;
                         return compareText((a.name||''), (b.name||''));
                     }
@@ -677,14 +763,18 @@ class ResourcesPage {
     }
     
     getResourceStatus(resource) {
+        if (resource.damagedStock > 0 && resource.quantity === 0) return 'Damaged / Repairing';
+        if (resource.quantity === 1 && resource.damagedStock === 1) return 'Damaged / Repairing';
         if (resource.quantity === 0) return 'Out of Stock';
         if (resource.quantity <= resource.minQuantity) return 'Low Stock';
         return 'Available';
     }
     
     getStatusClass(resource) {
-        const status = this.getResourceStatusForRow(resource);
+        const status = this.getResourceStatus(resource);
         if (status === 'Available') return 'status-available';
+        if (status === 'Low Stock') return 'status-low';
+        if (status === 'Damaged / Repairing') return 'status-repairing';
         return 'status-out';
     }
     
@@ -752,6 +842,11 @@ class ResourcesPage {
         this.editingResourceId = null;
         this.updateModalContent('Add New Resource', 'Fill in the details below to add a new resource to your inventory', 'Save Resource');
         document.getElementById('resourceForm').reset();
+        const statusBadge = document.getElementById('modalStatusBadge');
+        if (statusBadge) {
+            statusBadge.style.display = 'none';
+        }
+        this.updateItemizedUnitsForm();
         document.getElementById('resourceModal').classList.add('active');
         document.getElementById('resourceModal').style.display = 'flex';
     }
@@ -780,8 +875,10 @@ class ResourcesPage {
             const descriptionField = document.getElementById('resourceDescription');
             const totalStockField = document.getElementById('totalStock');
             const availableStockField = document.getElementById('availableStock');
+            const damagedStockField = document.getElementById('damagedStock');
             const minimumStockField = document.getElementById('minimumStock');
             const storageLocationField = document.getElementById('storageLocation');
+            const plateNumberField = document.getElementById('plateNumber');
             
             // Handle both field naming conventions (quantity vs availableStock, minQuantity vs minimumStock)
             const resourceName = resource.name || resource.resourceName || '';
@@ -791,8 +888,10 @@ class ResourcesPage {
             const resourceDescription = resource.description || '';
             const resourceTotalStock = resource.totalStock ?? (resource.quantity ?? 0);
             const resourceAvailableStock = resource.availableStock ?? (resource.quantity ?? 0);
+            const resourceDamagedStock = resource.damagedStock ?? 0;
             const resourceMinimumStock = resource.minimumStock ?? (resource.minQuantity ?? 0);
             const resourceStorageLocation = resource.storageLocation || '';
+            const resourcePlateNumber = resource.plateNumber || '';
             
             if (nameField) nameField.value = resourceName;
             if (categoryField) categoryField.value = resourceCategory;
@@ -801,8 +900,10 @@ class ResourcesPage {
             if (descriptionField) descriptionField.value = resourceDescription;
             if (totalStockField) totalStockField.value = resourceTotalStock;
             if (availableStockField) availableStockField.value = resourceAvailableStock;
+            if (damagedStockField) damagedStockField.value = resourceDamagedStock;
             if (minimumStockField) minimumStockField.value = resourceMinimumStock;
             if (storageLocationField) storageLocationField.value = resourceStorageLocation;
+            if (plateNumberField) plateNumberField.value = resourcePlateNumber;
             
             console.log('Form fields populated:', {
                 name: nameField?.value,
@@ -811,6 +912,9 @@ class ResourcesPage {
                 minimumStock: minimumStockField?.value,
                 storageLocation: storageLocationField?.value
             });
+
+            this.updateModalStatusBadge();
+            this.updateItemizedUnitsForm(resource);
         }, 100);
         
         document.getElementById('resourceModal').classList.add('active');
@@ -818,9 +922,159 @@ class ResourcesPage {
     }
     
     updateModalContent(title, subtitle, buttonText) {
-        document.getElementById('modalTitle').textContent = title;
+        const titleTextEl = document.getElementById('modalTitleText');
+        if (titleTextEl) {
+            titleTextEl.textContent = title;
+        } else {
+            document.getElementById('modalTitle').textContent = title;
+        }
         document.getElementById('modalSubtitle').textContent = subtitle;
         document.getElementById('saveButtonText').textContent = buttonText;
+    }
+
+    updateModalStatusBadge() {
+        const availableStockVal = parseInt(document.getElementById('availableStock')?.value) || 0;
+        const damagedStockVal = parseInt(document.getElementById('damagedStock')?.value) || 0;
+        const minimumStockVal = parseInt(document.getElementById('minimumStock')?.value) || 0;
+        
+        const resourceStatus = this.getResourceStatus({
+            quantity: availableStockVal,
+            minQuantity: minimumStockVal,
+            damagedStock: damagedStockVal
+        });
+        
+        const statusBadge = document.getElementById('modalStatusBadge');
+        if (statusBadge) {
+            statusBadge.textContent = resourceStatus;
+            statusBadge.style.display = 'inline-block';
+            statusBadge.className = 'status-badge ' + (
+                resourceStatus === 'Available' ? 'badge-available' :
+                resourceStatus === 'Low Stock' ? 'badge-low' :
+                resourceStatus === 'Damaged / Repairing' ? 'badge-repairing' : 'badge-out'
+            );
+        }
+    }
+
+    toggleItems(btn, id) {
+        const row = document.getElementById(`items-row-${id}`);
+        const icon = btn.querySelector('.material-icons');
+        if (row) {
+            if (row.style.display === 'none') {
+                row.style.display = 'table-row';
+                if (icon) icon.style.transform = 'rotate(90deg)';
+            } else {
+                row.style.display = 'none';
+                if (icon) icon.style.transform = 'rotate(0deg)';
+            }
+        }
+    }
+
+    manageItems(resourceId) {
+        this.editResource(resourceId);
+    }
+
+    updateItemizedUnitsForm(resource = null) {
+        const totalStockField = document.getElementById('totalStock');
+        const count = parseInt(totalStockField?.value) || 0;
+        const section = document.getElementById('itemizedUnitsSection');
+        const container = document.getElementById('itemizedUnitsList');
+        
+        if (!container || !section) return;
+        
+        if (count <= 0) {
+            section.style.display = 'none';
+            container.innerHTML = '';
+            return;
+        }
+        
+        section.style.display = 'block';
+        
+        const existingData = [];
+        const items = container.querySelectorAll('.item-unit-row');
+        items.forEach((row) => {
+            existingData.push({
+                id: row.dataset.id || null,
+                uniqueIdentifier: row.querySelector('.item-identifier')?.value || '',
+                status: row.querySelector('.item-status')?.value || 'Available',
+                storageLocation: row.querySelector('.item-location')?.value || '',
+                conditionNotes: row.querySelector('.item-notes')?.value || ''
+            });
+        });
+        
+        const sourceItems = (existingData.length === 0 && resource && resource.items) ? resource.items : existingData;
+        
+        let html = '';
+        const resourceName = document.getElementById('resourceName')?.value || 'Unit';
+        
+        for (let i = 0; i < count; i++) {
+            const item = sourceItems[i] || {};
+            const itemIndex = i + 1;
+            const itemId = item.id || '';
+            const identifier = item.uniqueIdentifier || (resourceName + ' Unit #' + itemIndex);
+            const status = item.status || 'Available';
+            const location = item.storageLocation || document.getElementById('storageLocation')?.value || '';
+            const notes = item.conditionNotes || '';
+            
+            html += `
+                <div class="item-unit-row" data-index="${i}" data-id="${itemId}" style="border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; background: var(--bg-light); text-align: left; margin-bottom: 8px;">
+                    <div style="font-weight: 600; font-size: 0.85rem; color: var(--text-dark); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                        <span>Unit #${itemIndex}</span>
+                        ${itemId ? `<span style="font-size: 0.72rem; color: var(--text-muted);">Database ID: #${itemId}</span>` : '<span style="font-size: 0.72rem; color: var(--primary-color);">New Unit</span>'}
+                    </div>
+                    <div class="form-row-three" style="margin-bottom: 8px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; text-align: left; font-weight: 500;">Plate / Serial / ID</label>
+                            <input type="text" class="item-identifier" value="${identifier}" placeholder="e.g. Plate No." style="width: 100%; padding: 6px 10px; font-size: 0.85rem; border: 1px solid var(--border-color); border-radius: 4px;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; text-align: left; font-weight: 500;">Status</label>
+                            <select class="item-status" style="width: 100%; padding: 6px 10px; font-size: 0.85rem; border: 1px solid var(--border-color); border-radius: 4px; background: #fff;" onchange="resourcesPage.syncStocksFromItemStatuses()">
+                                <option value="Available" ${status === 'Available' ? 'selected' : ''}>Available</option>
+                                <option value="Damaged / Repairing" ${status === 'Damaged / Repairing' ? 'selected' : ''}>Damaged / Repairing</option>
+                                <option value="Decommissioned" ${status === 'Decommissioned' ? 'selected' : ''}>Decommissioned</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; text-align: left; font-weight: 500;">Storage Location</label>
+                            <input type="text" class="item-location" value="${location}" placeholder="Storage Location" style="width: 100%; padding: 6px 10px; font-size: 0.85rem; border: 1px solid var(--border-color); border-radius: 4px;">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; text-align: left; font-weight: 500;">Condition Notes / Issues</label>
+                        <input type="text" class="item-notes" value="${notes}" placeholder="Specify any issues or details" style="width: 100%; padding: 6px 10px; font-size: 0.85rem; border: 1px solid var(--border-color); border-radius: 4px;">
+                    </div>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = html;
+        this.syncStocksFromItemStatuses();
+    }
+
+    syncStocksFromItemStatuses() {
+        const container = document.getElementById('itemizedUnitsList');
+        if (!container) return;
+        
+        const rows = container.querySelectorAll('.item-unit-row');
+        let availableCount = 0;
+        let damagedCount = 0;
+        
+        rows.forEach(row => {
+            const status = row.querySelector('.item-status')?.value;
+            if (status === 'Available') {
+                availableCount++;
+            } else if (status === 'Damaged / Repairing') {
+                damagedCount++;
+            }
+        });
+        
+        const avStockField = document.getElementById('availableStock');
+        const dmgStockField = document.getElementById('damagedStock');
+        
+        if (avStockField) avStockField.value = availableCount;
+        if (dmgStockField) dmgStockField.value = damagedCount;
+        
+        this.updateModalStatusBadge();
     }
     
     saveResource() {
@@ -835,9 +1089,24 @@ class ResourcesPage {
             description: formData.get('description'),
             totalStock: parseInt(formData.get('totalStock')) || 0,
             availableStock: parseInt(formData.get('availableStock')) || 0,
+            damagedStock: parseInt(formData.get('damagedStock')) || 0,
             minimumStock: parseInt(formData.get('minimumStock')) || 0,
-            storageLocation: formData.get('storageLocation') || null
+            storageLocation: formData.get('storageLocation') || null,
+            plateNumber: formData.get('plateNumber') || null
         };
+
+        const items = [];
+        const itemRows = document.querySelectorAll('#itemizedUnitsList .item-unit-row');
+        itemRows.forEach(row => {
+            items.push({
+                id: row.dataset.id ? parseInt(row.dataset.id) : null,
+                uniqueIdentifier: row.querySelector('.item-identifier')?.value || '',
+                status: row.querySelector('.item-status')?.value || 'Available',
+                storageLocation: row.querySelector('.item-location')?.value || '',
+                conditionNotes: row.querySelector('.item-notes')?.value || ''
+            });
+        });
+        resourceData.items = items;
         
         if (this.editingResourceId) {
             resourceData.id = this.editingResourceId;
@@ -845,13 +1114,18 @@ class ResourcesPage {
         
         // Validate form
         if (!resourceData.name || !resourceData.category || !resourceData.unit || 
-            resourceData.totalStock < 0 || resourceData.availableStock < 0) {
+            resourceData.totalStock < 0 || resourceData.availableStock < 0 || resourceData.damagedStock < 0) {
             this.showError('Please fill in all required fields correctly.');
             return;
         }
         
         if (resourceData.availableStock > resourceData.totalStock) {
             this.showError('Available stock cannot be greater than total stock.');
+            return;
+        }
+
+        if ((resourceData.availableStock + resourceData.damagedStock) > resourceData.totalStock) {
+            this.showError('Available stock + Damaged stock cannot be greater than total stock.');
             return;
         }
         
@@ -871,11 +1145,13 @@ class ResourcesPage {
                     quantity: resourceData.availableStock, // Update display quantity
                     totalStock: resourceData.totalStock,
                     availableStock: resourceData.availableStock,
+                    damagedStock: resourceData.damagedStock,
                     minimumStock: resourceData.minimumStock,
                     minQuantity: resourceData.minimumStock, // Update display minQuantity
                     unit: resourceData.unit,
                     description: resourceData.description,
                     storageLocation: resourceData.storageLocation,
+                    plateNumber: resourceData.plateNumber,
                     lastUpdated: new Date().toISOString()
                 };
                 this.renderResources();
@@ -911,11 +1187,13 @@ class ResourcesPage {
                         quantity: resourceData.availableStock,
                         totalStock: resourceData.totalStock,
                         availableStock: resourceData.availableStock,
+                        damagedStock: resourceData.damagedStock,
                         minimumStock: resourceData.minimumStock,
                         minQuantity: resourceData.minimumStock,
                         unit: resourceData.unit,
                         description: resourceData.description,
                         storageLocation: resourceData.storageLocation,
+                        plateNumber: resourceData.plateNumber,
                         lastUpdated: new Date().toISOString()
                     };
                     this.resources.push(newResource);
@@ -1237,7 +1515,8 @@ class ResourcesPage {
     }
 
     getResourceStatusForRow(resource) {
-        // Simplified: Available if quantity > 0, Unavailable if quantity = 0
+        if (resource.damagedStock > 0 && resource.quantity === 0) return 'Damaged / Repairing';
+        if (resource.quantity === 1 && resource.damagedStock === 1) return 'Damaged / Repairing';
         return resource.quantity > 0 ? 'Available' : 'Unavailable';
     }
 
@@ -1295,9 +1574,9 @@ class ResourcesPage {
                     case 'qty_asc':
                         return compareNum((a.quantity||0), (b.quantity||0));
                     case 'status': {
-                        // Available first, then Unavailable
-                        const va = this.getResourceStatusForRow(a) === 'Available' ? 0 : 1;
-                        const vb = this.getResourceStatusForRow(b) === 'Available' ? 0 : 1;
+                        // Available first, then Damaged / Repairing, then Unavailable
+                        const va = this.getResourceStatusForRow(a) === 'Available' ? 0 : (this.getResourceStatusForRow(a) === 'Damaged / Repairing' ? 1 : 2);
+                        const vb = this.getResourceStatusForRow(b) === 'Available' ? 0 : (this.getResourceStatusForRow(b) === 'Damaged / Repairing' ? 1 : 2);
                         if (va !== vb) return va - vb;
                         return compareText((a.name||''), (b.name||''));
                     }
@@ -1329,17 +1608,86 @@ class ResourcesPage {
 
         // Render rows
         if (pageItems.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No resources found</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No resources found</td></tr>';
         } else {
             tbody.innerHTML = pageItems.map(r => `
                 <tr>
-                    <td><strong>${r.name}</strong></td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            ${r.items && r.items.length > 0 ? `
+                                <button type="button" class="btn btn-link btn-sm p-0 toggle-items-btn" onclick="resourcesPage.toggleItems(this, 'all-${r.id}')" style="color: var(--primary-color); display: inline-flex; align-items: center; justify-content: center; text-decoration: none; border: none; background: none;">
+                                    <span class="material-icons" style="font-size: 20px; transition: transform 0.2s; color: var(--primary-color);">keyboard_arrow_right</span>
+                                </button>
+                            ` : ''}
+                            <div>
+                                <div style="font-weight: 600; color: var(--text-dark); text-align: left;">${r.name}</div>
+                                ${r.plateNumber ? `
+                                    <div class="text-muted" style="font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0; font-family: monospace;">
+                                        <span class="material-icons" style="font-size: 12px;">badge</span>
+                                        ${r.plateNumber}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </td>
                     <td>${this.cleanMunicipalityName(r.drrmoName)}</td>
                     <td>${r.subcategory || r.category || 'N/A'}</td>
                     <td>${r.quantity}</td>
-                    <td><span class="badge ${this.getResourceStatusForRow(r) === 'Available' ? 'bg-success' : 'bg-danger'}">${this.getResourceStatusForRow(r)}</span></td>
+                    <td>${(r.damagedStock > 0) ? `<span class="badge bg-danger">${r.damagedStock}</span>` : '<span class="text-muted small">-</span>'}</td>
+                    <td>
+                        <span class="badge ${this.getResourceStatusForRow(r) === 'Available' ? 'bg-success' : this.getResourceStatusForRow(r) === 'Damaged / Repairing' ? 'bg-warning text-dark' : 'bg-danger'}">${this.getResourceStatusForRow(r)}</span>
+                        ${((this.getResourceStatusForRow(r) === 'Unavailable' || this.getResourceStatusForRow(r) === 'Out of Stock') && r.nextAvailableDate) ? `
+                            <div class="text-muted mt-1" style="font-size: 0.72rem; line-height: 1.1; font-weight: 500;">
+                                Available: ${this.formatDate(r.nextAvailableDate)}
+                            </div>
+                        ` : ''}
+                    </td>
                     <td>${this.formatDate(r.lastUpdated)}</td>
                 </tr>
+                ${r.items && r.items.length > 0 ? `
+                    <tr id="items-row-all-${r.id}" class="resource-items-row" style="display: none; background-color: #fafbfc;">
+                        <td colspan="7" style="padding: 12px 24px;">
+                            <div style="border-left: 3px solid #cbd5e1; padding-left: 16px; margin: 4px 0;">
+                                <div style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 8px; text-align: left;">
+                                    Itemized Units (${r.items.length})
+                                </div>
+                                <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 6px; background: #ffffff; overflow: hidden;">
+                                    <table class="table table-sm table-borderless m-0" style="font-size: 0.85rem; width: 100%;">
+                                        <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                            <tr>
+                                                <th style="padding: 6px 12px; color: #475569; font-weight: 600; text-align: left;">Plate No. / Serial No. / ID</th>
+                                                <th style="padding: 6px 12px; color: #475569; font-weight: 600; text-align: left;">Status</th>
+                                                <th style="padding: 6px 12px; color: #475569; font-weight: 600; text-align: left;">Storage Location</th>
+                                                <th style="padding: 6px 12px; color: #475569; font-weight: 600; text-align: left;">Notes</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${r.items.map(item => `
+                                                <tr style="border-bottom: 1px solid #f1f5f9;">
+                                                    <td style="padding: 8px 12px; font-family: monospace; font-weight: 500; text-align: left;">
+                                                        <span class="material-icons" style="font-size: 14px; vertical-align: middle; margin-right: 4px; color: #64748b;">badge</span>
+                                                        ${item.uniqueIdentifier}
+                                                    </td>
+                                                    <td style="padding: 8px 12px; text-align: left;">
+                                                        <span class="badge ${item.status === 'Available' ? 'bg-success' : item.status === 'Damaged / Repairing' ? 'bg-warning text-dark' : 'bg-secondary'}" style="font-size: 0.72rem; padding: 2px 6px;">
+                                                            ${item.status}
+                                                        </span>
+                                                    </td>
+                                                    <td style="padding: 8px 12px; color: #334155; text-align: left;">
+                                                        ${item.storageLocation || '<span class="text-muted italic">Not specified</span>'}
+                                                    </td>
+                                                    <td style="padding: 8px 12px; color: #64748b; font-style: italic; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left;" title="${item.conditionNotes || ''}">
+                                                        ${item.conditionNotes || '-'}
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                ` : ''}
             `).join('');
         }
 

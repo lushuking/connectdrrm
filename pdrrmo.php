@@ -90,11 +90,13 @@ requireProfileCompleted();
     <!-- Page-specific JS -->
     <?php 
     if ($page === 'reports') {
-        if (file_exists('assets/js/pages/reports.js')) echo '<script src="assets/js/pages/reports.js?v=1.0.2"></script>' . "\n";
-        if (file_exists('assets/js/pages/reports_pdrrmo.js')) echo '<script src="assets/js/pages/reports_pdrrmo.js?v=1.0.2"></script>' . "\n";
+        $js1 = 'assets/js/pages/reports.js';
+        $js2 = 'assets/js/pages/reports_pdrrmo.js';
+        if (file_exists($js1)) echo '<script src="' . $js1 . '?v=' . filemtime($js1) . '"></script>' . "\n";
+        if (file_exists($js2)) echo '<script src="' . $js2 . '?v=' . filemtime($js2) . '"></script>' . "\n";
     } else {
         $page_js = "assets/js/pages/{$page}.js";
-        if (file_exists($page_js)) echo '<script src="' . $page_js . '?v=1.0.2"></script>' . "\n";
+        if (file_exists($page_js)) echo '<script src="' . $page_js . '?v=' . filemtime($page_js) . '"></script>' . "\n";
     }
     ?>
     

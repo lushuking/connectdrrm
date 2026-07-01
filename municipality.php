@@ -95,7 +95,7 @@ requireUserType('drrmo_staff');
     $page_js = "assets/js/pages/{$page}.js";
     if (file_exists($page_js)): 
     ?>
-        <script src="<?php echo $page_js; ?>?v=1.0.2"></script>
+        <script src="<?php echo $page_js; ?>?v=<?php echo filemtime($page_js); ?>"></script>
     <?php endif; ?>
     
     <!-- Initialize Dashboard -->
@@ -151,5 +151,12 @@ requireUserType('drrmo_staff');
             }
         }
     </script>
+    <!-- Late override: force confirm return modal width after Bootstrap loads -->
+    <style>
+        #confirmReturnModal .modal-dialog {
+            width: 98vw !important;
+            max-width: 98vw !important;
+        }
+    </style>
 </body>
 </html>

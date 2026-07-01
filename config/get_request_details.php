@@ -31,6 +31,8 @@ try {
     $sql = "
         SELECT 
             r.requestID,
+            r.resourceID,
+            r.toDRRMO,
             r.quantity,
             r.status,
             r.requestDate,
@@ -48,7 +50,10 @@ try {
             r.returnDate,
             r.transportationMethod,
             r.approvingAuthority,
-            r.additionalNotes,
+            r.head_approval_status,
+            r.head_approved_by,
+            r.approverTitle,
+            r.approverSignature,
             r.originalToDRRMO,
             from_drrmo.name AS fromMunicipality,
             to_drrmo.name AS toMunicipality,
@@ -73,6 +78,30 @@ try {
         $err('not_found', 'Request not found', 404);
     }
 
+    // Get dispatched items if any
+    $dispatchedItems = [];
+    $dispStmt = $pdo->prepare("
+        SELECT ri.itemID, ri.uniqueIdentifier, ri.status, ri.storageLocation, ri.conditionNotes 
+        FROM request_dispatched_items rdi
+        JOIN resource_items ri ON rdi.itemID = ri.itemID
+        WHERE rdi.requestID = ?
+    ");
+    $dispStmt->execute([$requestId]);
+    $dispatchedItems = $dispStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Get available items if pending or pending head approval
+    $availableItems = [];
+    $statusLower = strtolower($request['status'] ?? 'pending');
+    if ($statusLower === 'pending' || $statusLower === 'pending_head_approval') {
+        $availStmt = $pdo->prepare("
+            SELECT itemID, uniqueIdentifier, status, storageLocation, conditionNotes 
+            FROM resource_items 
+            WHERE resourceID = ? AND status = 'Available'
+        ");
+        $availStmt->execute([$request['resourceID']]);
+        $availableItems = $availStmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     // Clean municipality names (remove DRRMO prefixes/suffixes)
     $cleanName = function($name) {
         $n = (string)($name ?? '');
@@ -89,6 +118,7 @@ try {
 
     $requestData = [
         'requestID' => (int)$request['requestID'],
+        'resourceID' => (int)$request['resourceID'],
         'resourceName' => $request['resourceName'],
         'category' => $request['category'],
         'unit' => $request['unit'],
@@ -114,7 +144,12 @@ try {
         'returnDate' => $request['returnDate'],
         'transportMethod' => $request['transportationMethod'],
         'approvingAuthority' => $request['approvingAuthority'],
-        'additionalNotes' => $request['additionalNotes']
+        'headApprovalStatus' => $request['head_approval_status'],
+        'headApprovedBy' => $request['head_approved_by'],
+        'approverTitle' => $request['approverTitle'],
+        'approverSignature' => $request['approverSignature'],
+        'dispatchedItems' => $dispatchedItems,
+        'availableItems' => $availableItems
     ];
 
     $ok($requestData);

@@ -17,7 +17,7 @@ try {
     $location = $_POST['hazardLocation'] ?? '';
     $hazardDate = $_POST['hazardDate'] ?? '';
     $statusInput = $_POST['hazardStatus'] ?? '';
-    $peopleAffected = intval($_POST['peopleAffected'] ?? 0);
+    $peopleAffected = trim($_POST['peopleAffected'] ?? '');
     $description = $_POST['hazardDescription'] ?? '';
     $informationSource = $_POST['hazardSource'] ?? '';
     $contactInfo = $_POST['contactInfo'] ?? '';

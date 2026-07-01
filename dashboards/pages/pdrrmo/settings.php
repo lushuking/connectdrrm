@@ -69,6 +69,109 @@
         <!-- RIGHT: Settings Panels -->
         <div class="col-lg-8">
 
+            <!-- Update Profile -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-bottom pt-3 pb-2 px-3">
+                    <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                        <span class="material-icons text-primary" style="font-size:20px;">manage_accounts</span>
+                        Update Profile Information
+                    </h6>
+                    <p class="text-muted small mb-0 mt-1">Keep your contact information and signature up to date.</p>
+                </div>
+                <div class="card-body p-4">
+                    <form id="updateProfileForm" autocomplete="off" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing:0.5px;">Full Name <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <span class="material-icons text-muted" style="font-size:18px;">person</span>
+                                </span>
+                                <input type="text" class="form-control border-start-0" id="profileFullName" name="full_name" placeholder="Enter your full name" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing:0.5px;">Position / Job Title <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <span class="material-icons text-muted" style="font-size:18px;">work</span>
+                                </span>
+                                <input type="text" class="form-control border-start-0" id="profilePosition" name="position" placeholder="Enter your position" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing:0.5px;">Contact Number <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <span class="material-icons text-muted" style="font-size:18px;">phone</span>
+                                </span>
+                                <input type="tel" class="form-control border-start-0" id="profileContact" name="contact_number" placeholder="Enter your contact number" required>
+                            </div>
+                        </div>
+
+                        <!-- E-Signature Section -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing:0.5px;">E-Signature <span class="text-danger">*</span></label>
+                            <div class="signature-upload-container p-3 mb-2" style="border: 2px dashed #ddd; border-radius: 8px; text-align: center; background: #f9f9f9; min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                <div id="settingsSignaturePreview" style="display: none; margin-bottom: 10px;">
+                                    <img id="settingsSignatureImage" class="img-thumbnail" alt="Signature Preview" style="max-height: 120px;">
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-danger me-2" onclick="clearSettingsSignature()">Remove</button>
+                                        <button type="button" class="btn btn-sm btn-primary" onclick="document.getElementById('settingsSignatureFile').click()">Change Signature</button>
+                                    </div>
+                                </div>
+                                <div id="settingsSignaturePlaceholder">
+                                    <span class="material-icons text-muted" style="font-size: 48px; margin-bottom: 10px;">signature</span>
+                                    <p class="text-muted small mb-0">Click to upload your e-signature</p>
+                                </div>
+                                <input type="file" id="settingsSignatureFile" accept="image/*" style="display: none;" onchange="handleSettingsSignatureUpload(event)">
+                                <input type="hidden" name="signature_base64" id="settingsSignatureBase64" required>
+                                <div id="settingsUploadSigBtnContainer" class="mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('settingsSignatureFile').click()">
+                                        Upload Signature Image
+                                    </button>
+                                </div>
+                            </div>
+                            <small class="text-muted">Upload a clear PNG/JPG image of your signature. Preferably transparent background.</small>
+                        </div>
+
+                        <!-- Municipality Logo Section (Only for DRRMO Staff) -->
+                        <?php if (isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'drrmo_staff'): ?>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing:0.5px;">Municipality Logo <span class="text-danger">*</span></label>
+                            <div class="logo-upload-container p-3 mb-2" style="border: 2px dashed #ddd; border-radius: 8px; text-align: center; background: #f9f9f9; min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                <div id="settingsLogoPreview" style="display: none; margin-bottom: 10px;">
+                                    <img id="settingsLogoImage" class="img-thumbnail" alt="Logo Preview" style="max-height: 120px;">
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-danger me-2" onclick="clearSettingsLogo()">Remove</button>
+                                        <button type="button" class="btn btn-sm btn-primary" onclick="document.getElementById('settingsLogoFile').click()">Change Logo</button>
+                                    </div>
+                                </div>
+                                <div id="settingsLogoPlaceholder">
+                                    <span class="material-icons text-muted" style="font-size: 48px; margin-bottom: 10px;">image</span>
+                                    <p class="text-muted small mb-0">Click to upload municipality logo</p>
+                                </div>
+                                <input type="file" id="settingsLogoFile" name="municipality_logo" accept="image/*" style="display: none;" onchange="handleSettingsLogoUpload(event)">
+                                <input type="hidden" name="existing_logo" id="settingsExistingLogo">
+                                <div id="settingsUploadLogoBtnContainer" class="mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('settingsLogoFile').click()">
+                                        Upload Logo Image
+                                    </button>
+                                </div>
+                            </div>
+                            <small class="text-muted">Upload your official municipality seal/logo (PNG/JPG format).</small>
+                        </div>
+                        <?php endif; ?>
+
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary px-5 fw-bold rounded-pill" id="updateProfileBtn">
+                                <span class="material-icons me-2" style="font-size:18px;">save</span>
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <!-- Change Password -->
             <div class="card border-0 shadow-sm rounded-4 mb-4">
                 <div class="card-header bg-white border-bottom pt-3 pb-2 px-3">
@@ -196,8 +299,13 @@
 </div>
 
 <script>
+let settingsSignatureData = '';
+
 document.addEventListener('DOMContentLoaded', function () {
     loadSettingsAccountInfo();
+
+    const profileForm = document.getElementById('updateProfileForm');
+    if (profileForm) profileForm.addEventListener('submit', handleUpdateProfile);
 
     // Change password form
     const form = document.getElementById('changePasswordForm');
@@ -221,6 +329,76 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
+function handleSettingsSignatureUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+        alert('File size must be less than 2MB');
+        return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        settingsSignatureData = e.target.result;
+        document.getElementById('settingsSignatureImage').src = settingsSignatureData;
+        document.getElementById('settingsSignaturePreview').style.display = 'block';
+        document.getElementById('settingsSignaturePlaceholder').style.display = 'none';
+        document.getElementById('settingsUploadSigBtnContainer').style.display = 'none';
+        document.getElementById('settingsSignatureBase64').value = settingsSignatureData;
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearSettingsSignature() {
+    settingsSignatureData = '';
+    document.getElementById('settingsSignaturePreview').style.display = 'none';
+    document.getElementById('settingsSignaturePlaceholder').style.display = 'block';
+    document.getElementById('settingsUploadSigBtnContainer').style.display = 'block';
+    document.getElementById('settingsSignatureFile').value = '';
+    document.getElementById('settingsSignatureBase64').value = '';
+}
+
+function handleSettingsLogoUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+        alert('File size must be less than 2MB');
+        document.getElementById('settingsLogoFile').value = '';
+        return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        document.getElementById('settingsLogoFile').value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('settingsLogoImage').src = e.target.result;
+        document.getElementById('settingsLogoPreview').style.display = 'block';
+        document.getElementById('settingsLogoPlaceholder').style.display = 'none';
+        document.getElementById('settingsUploadLogoBtnContainer').style.display = 'none';
+        document.getElementById('settingsExistingLogo').value = ''; // clear existing reference
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearSettingsLogo() {
+    document.getElementById('settingsLogoPreview').style.display = 'none';
+    document.getElementById('settingsLogoPlaceholder').style.display = 'block';
+    document.getElementById('settingsUploadLogoBtnContainer').style.display = 'block';
+    document.getElementById('settingsLogoFile').value = '';
+    document.getElementById('settingsExistingLogo').value = '';
+}
+
 async function loadSettingsAccountInfo() {
     try {
         const res = await fetch('config/settings_api.php?action=get_account_info');
@@ -238,8 +416,86 @@ async function loadSettingsAccountInfo() {
         document.getElementById('settingsMunicipality').textContent = u.municipality || 'N/A';
         document.getElementById('settingsUserId').textContent = '#' + u.userID;
         document.getElementById('settingsRoleRaw').textContent = u.roleDisplay;
+
+        // Populate update form fields
+        document.getElementById('profileFullName').value = u.fullName || '';
+        document.getElementById('profilePosition').value = u.position || '';
+        document.getElementById('profileContact').value = u.contactNumber || '';
+
+        if (u.signature) {
+            settingsSignatureData = u.signature;
+            document.getElementById('settingsSignatureImage').src = u.signature;
+            document.getElementById('settingsSignaturePreview').style.display = 'block';
+            document.getElementById('settingsSignaturePlaceholder').style.display = 'none';
+            document.getElementById('settingsUploadSigBtnContainer').style.display = 'none';
+            document.getElementById('settingsSignatureBase64').value = u.signature;
+        } else {
+            clearSettingsSignature();
+        }
+
+        const logoPreviewEl = document.getElementById('settingsLogoPreview');
+        if (logoPreviewEl) {
+            if (u.logoUrl) {
+                document.getElementById('settingsLogoImage').src = u.logoUrl;
+                logoPreviewEl.style.display = 'block';
+                document.getElementById('settingsLogoPlaceholder').style.display = 'none';
+                document.getElementById('settingsUploadLogoBtnContainer').style.display = 'none';
+                document.getElementById('settingsExistingLogo').value = u.logoUrl;
+            } else {
+                clearSettingsLogo();
+            }
+        }
     } catch (e) {
         console.error('Failed to load account info', e);
+    }
+}
+
+async function handleUpdateProfile(e) {
+    e.preventDefault();
+    const form = e.target;
+    const btn = document.getElementById('updateProfileBtn');
+    const orig = btn.innerHTML;
+
+    if (!document.getElementById('settingsSignatureBase64').value) {
+        showSettingsToast('Please upload your e-signature.', 'danger');
+        return;
+    }
+
+    const logoFileEl = document.getElementById('settingsLogoFile');
+    const existingLogoEl = document.getElementById('settingsExistingLogo');
+    if (logoFileEl && existingLogoEl) {
+        const hasNewLogo = logoFileEl.files.length > 0;
+        const hasExistingLogo = (existingLogoEl.value || '').trim() !== '';
+        if (!hasNewLogo && !hasExistingLogo) {
+            showSettingsToast('Please upload the municipality logo.', 'danger');
+            return;
+        }
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-icons me-2" style="font-size:18px;">hourglass_top</span> Saving...';
+
+    try {
+        const res = await fetch('config/settings_api.php?action=update_profile', {
+            method: 'POST',
+            body: new FormData(form)
+        });
+        const data = await res.json();
+        if (data.success) {
+            showSettingsToast('Profile details, signature, and logo updated successfully!', 'success');
+            await loadSettingsAccountInfo();
+
+            // Dynamic header refresh
+            const headerNameEl = document.querySelector('.user-info .user-name');
+            if (headerNameEl) headerNameEl.textContent = document.getElementById('profileFullName').value;
+        } else {
+            showSettingsToast(data.error || 'Failed to update profile', 'danger');
+        }
+    } catch (err) {
+        showSettingsToast('An error occurred. Please try again.', 'danger');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = orig;
     }
 }
 

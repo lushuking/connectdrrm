@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['complete_profile'])) 
                     try {
                         $checkSigColumn = $pdo->query("SHOW COLUMNS FROM users LIKE 'signature'")->fetch();
                         if (!$checkSigColumn) {
-                            $pdo->exec("ALTER TABLE users ADD COLUMN signature TEXT NULL");
+                            $pdo->exec("ALTER TABLE users ADD COLUMN signature LONGTEXT NULL");
                         }
                     } catch (Exception $e) {
                         error_log('Could not create signature column: ' . $e->getMessage());
@@ -193,7 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['complete_profile'])) 
             try {
                 $checkSigColumn = $pdo->query("SHOW COLUMNS FROM users LIKE 'signature'")->fetch();
                 if (!$checkSigColumn) {
-                    $pdo->exec("ALTER TABLE users ADD COLUMN signature TEXT NULL");
+                    $pdo->exec("ALTER TABLE users ADD COLUMN signature LONGTEXT NULL");
                 }
             } catch (Exception $e) {
                 error_log('Could not create signature column: ' . $e->getMessage());

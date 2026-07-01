@@ -42,6 +42,11 @@ try {
             r.priority,
             r.notes,
             r.requestGroupId,
+            r.head_approval_status,
+            r.head_approved_by,
+            r.approvingAuthority,
+            r.approverTitle,
+            r.approverSignature,
             from_drrmo.name as fromMunicipality,
             to_drrmo.name as toMunicipality,
             res.resourceName as resourceType,
@@ -108,7 +113,12 @@ try {
             'requestGroupId' => $request['requestGroupId'] ?? null,
             'isOwnRequest' => $isOwnRequest,
             'requestType' => $request['requestType'],
-            'isIncomingRequest' => $isIncomingRequest
+            'isIncomingRequest' => $isIncomingRequest,
+            'headApprovalStatus' => $request['head_approval_status'] ?? null,
+            'headApprovedBy' => $request['head_approved_by'] ?? null,
+            'approvingAuthority' => $request['approvingAuthority'] ?? null,
+            'approverTitle' => $request['approverTitle'] ?? null,
+            'approverSignature' => $request['approverSignature'] ?? null
         ];
     }
 } catch (Exception $e) {
@@ -205,12 +215,12 @@ function initializeInstructionBanner() {
 </script>
 
 <style>
-    /* Scoped styles for Request Details modal - compact, no-scroll layout */
+    /* Scoped styles for Request Details modal - compact, scrollable layout */
     #requestDetailsModal .modal-dialog { max-width: 720px; }
     #requestDetailsModal .modal-content { border-radius: 12px; }
     #requestDetailsModal .modal-header { padding: 12px 16px; border-bottom: 1px solid #e9ecef; }
     #requestDetailsModal .modal-title { font-size: 16px; font-weight: 600; }
-    #requestDetailsModal .modal-body { padding: 12px 16px; max-height: none; overflow: visible; }
+    #requestDetailsModal .modal-body { padding: 12px 16px; max-height: calc(100vh - 200px); overflow-y: auto; }
     #requestDetailsModal .modal-footer { padding: 10px 16px; border-top: 1px solid #e9ecef; }
 
     #requestDetailsModal .rdm-section { background: #fff; border: 1px solid #e9ecef; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
@@ -234,6 +244,22 @@ function initializeInstructionBanner() {
         max-width: 100%;
         height: auto;
         border-radius: 4px;
+    }
+
+    /* Hide scrollbar in confirm return modal body (WebKit: Chrome, Edge, Safari) */
+    #confirmReturnModal .modal-body::-webkit-scrollbar,
+    #returnItemsList::-webkit-scrollbar,
+    #dispatchItemsList::-webkit-scrollbar {
+        display: none;
+        width: 0;
+    }
+
+    /* Force confirm return modal to be large */
+    .confirm-return-dialog,
+    #confirmReturnModal .modal-dialog,
+    #confirmReturnModal.modal .modal-dialog {
+        width: 95vw !important;
+        max-width: 95vw !important;
     }
 
     /* Multi-Resource Selection Styles */
@@ -477,80 +503,179 @@ function initializeInstructionBanner() {
 
 </style>
 
-<!-- Request Details Modal (minimal Bootstrap) -->
+<!-- Request Details Modal (Premium Styled) -->
 <div class="modal fade" id="requestDetailsModal" tabindex="-1" aria-labelledby="requestDetailsLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header py-2">
-                <h6 class="modal-title" id="requestDetailsLabel">Request Details</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 650px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+            <div class="modal-header py-3 px-4" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white;">
+                <h6 class="modal-title d-flex align-items-center gap-2" id="requestDetailsLabel">
+                    <span class="material-icons" style="font-size: 20px;">info</span>
+                    Resource Request Details
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="rdm-section">
-                    <div class="rdm-row">
+            <div class="modal-body p-4" style="background: #f8f9fa;">
+                <!-- Top Overview Grid -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100" style="border-radius: 10px;">
+                            <div class="card-body p-3 text-center">
+                                <div class="text-muted small text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Request ID</div>
+                                <div id="reqModalId" class="fw-bold text-dark fs-5">—</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100" style="border-radius: 10px;">
+                            <div class="card-body p-3 text-center d-flex flex-column align-items-center justify-content-center">
+                                <div class="text-muted small text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Status</div>
+                                <div id="reqModalStatus" class="fw-semibold">—</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100" style="border-radius: 10px;">
+                            <div class="card-body p-3 text-center d-flex flex-column align-items-center justify-content-center">
+                                <div class="text-muted small text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Priority</div>
+                                <div id="reqModalPriority" class="fw-semibold">—</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transfer Flow (From -> To) -->
+                <div class="card border-0 shadow-sm mb-3" style="border-radius: 10px;">
+                    <div class="card-body p-3">
+                        <div class="text-muted small text-uppercase mb-2" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Route Flow</div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="text-center flex-grow-1 p-2 bg-light rounded" style="max-width: 45%;">
+                                <div class="small text-muted" style="font-size: 11px;">Requesting Office</div>
+                                <div id="reqModalFrom" class="fw-bold text-truncate" style="font-size: 14px;">—</div>
+                            </div>
+                            <div class="text-center px-2">
+                                <span class="material-icons text-primary" style="font-size: 24px;">arrow_forward</span>
+                            </div>
+                            <div class="text-center flex-grow-1 p-2 bg-light rounded" style="max-width: 45%;">
+                                <div class="small text-muted" style="font-size: 11px;">Provider Office</div>
+                                <div id="reqModalTo" class="fw-bold text-truncate" style="font-size: 14px;">—</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resource Details & Qty -->
+                <div class="card border-0 shadow-sm mb-3" style="border-radius: 10px;">
+                    <div class="card-body p-3">
+                        <div class="row g-3 align-items-center">
+                            <div class="col-8">
+                                <div class="text-muted small text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Requested Item</div>
+                                <div id="reqModalResource" class="fw-bold text-dark fs-6" style="line-height: 1.2;">—</div>
+                            </div>
+                            <div class="col-4 text-end">
+                                <div class="text-muted small text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Quantity</div>
+                                <div id="reqModalQty" class="fw-bold text-primary fs-5">—</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes / Additional info -->
+                <div class="card border-0 shadow-sm mb-3" style="border-radius: 10px;">
+                    <div class="card-body p-3">
+                        <div class="text-muted small text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Additional Notes</div>
+                        <div id="reqModalNotes" class="text-dark small" style="white-space: pre-line; min-height: 38px;">—</div>
+                    </div>
+                </div>
+
+                <!-- Dates Timeline -->
+                <div class="card border-0 shadow-sm mb-3" style="border-radius: 10px;">
+                    <div class="card-body p-3">
+                        <div class="row g-2 text-center">
+                            <div class="col-6 border-end">
+                                <div class="text-muted small text-uppercase mb-1" style="font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">Submitted On</div>
+                                <div id="reqModalRequestDate" class="small fw-semibold text-dark">—</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted small text-uppercase mb-1" style="font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">Approved/Evaluated On</div>
+                                <div id="reqModalApproveDate" class="small fw-semibold text-dark">—</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Damage Assessment Card (shown only for returned requests with damage) -->
+                <div class="card border-0 shadow-sm mb-3 d-none" id="reqModalDamageSection" style="border-radius:10px;border-left:4px solid #dc3545!important;">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="material-icons text-danger" style="font-size:18px;">warning</span>
+                            <strong class="small text-danger">Damage Assessment Report</strong>
+                        </div>
+                        <div class="row g-2 text-center mb-2">
+                            <div class="col-4 border-end">
+                                <div class="text-muted small text-uppercase mb-1" style="font-size:9px;font-weight:700;letter-spacing:.5px;">Total Returned</div>
+                                <div id="reqModalTotalQty" class="fw-bold text-dark">-</div>
+                            </div>
+                            <div class="col-4 border-end">
+                                <div class="text-muted small text-uppercase mb-1" style="font-size:9px;font-weight:700;letter-spacing:.5px;">Good Condition</div>
+                                <div id="reqModalGoodQty" class="fw-bold text-success">-</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-muted small text-uppercase mb-1" style="font-size:9px;font-weight:700;letter-spacing:.5px;">Damaged</div>
+                                <div id="reqModalDamagedQty" class="fw-bold text-danger">-</div>
+                            </div>
+                        </div>
                         <div>
-                            <div class="rdm-label">Request ID</div>
-                            <div id="reqModalId" class="rdm-value">—</div>
-                        </div>
-                        <div class="text-end">
-                            <div class="rdm-label">Status</div>
-                            <div id="reqModalStatus">—</div>
+                            <div class="text-muted small text-uppercase mb-1" style="font-size:9px;font-weight:700;letter-spacing:.5px;">Assessment Notes</div>
+                            <div id="reqModalDamageNotes" class="small text-dark" style="white-space:pre-line;">-</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="rdm-grid">
-                    <div class="rdm-section">
-                        <div class="rdm-label">Request Date</div>
-                        <div id="reqModalRequestDate" class="rdm-value">—</div>
-                    </div>
-                    <div class="rdm-section">
-                        <div class="rdm-label">Approve Date</div>
-                        <div id="reqModalApproveDate" class="rdm-value">—</div>
-                    </div>
-                </div>
-
-                <div class="rdm-section">
-                    <div class="rdm-label">Resource</div>
-                    <div id="reqModalResource" class="rdm-value">—</div>
-                </div>
-
-                <div class="rdm-section">
-                    <div class="rdm-transfer">
-                        <div class="rdm-transfer-box">
-                            <div class="rdm-label">From</div>
-                            <div id="reqModalFrom" class="rdm-value">—</div>
+                <!-- Dispatched Units Card -->
+                <div class="card border-0 shadow-sm mb-3 d-none" id="reqModalDispatchedSection" style="border-radius:10px;border-left:4px solid #0d6efd!important;">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="material-icons text-primary" style="font-size:18px;">local_shipping</span>
+                            <strong class="small text-primary">Dispatched Units Details</strong>
                         </div>
-                        <div class="rdm-arrow">→</div>
-                        <div class="rdm-transfer-box">
-                            <div class="rdm-label">To</div>
-                            <div id="reqModalTo" class="rdm-value">—</div>
+                        <div id="reqModalDispatchedList" class="small text-dark d-flex flex-column gap-2">
+                            <!-- List of dispatched units will be rendered here -->
                         </div>
                     </div>
                 </div>
 
-                <div class="rdm-grid">
-                    <div class="rdm-section">
-                        <div class="rdm-label">Quantity</div>
-                        <div id="reqModalQty" class="rdm-value">—</div>
+                <!-- Head Authorization & Audit Card -->
+                <div class="card border-0 shadow-sm d-none" id="reqModalApprovalMethodSection" style="border-radius: 10px;">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="text-muted small text-uppercase" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Authorization Details</div>
+                            <div id="reqModalApprovalBadge"></div>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between gap-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="d-flex align-items-center justify-content-center bg-light rounded-circle text-secondary" style="width: 44px; height: 44px; flex-shrink: 0;">
+                                    <span class="material-icons" style="font-size: 22px;">assignment_ind</span>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block mb-1" style="font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;" id="reqModalAuthorizedLabel">Authorized By</span>
+                                    <span id="reqModalAuthorizedName" class="fw-bold text-dark d-block fs-6">—</span>
+                                    <span id="reqModalAuthorizedTitle" class="text-muted small d-block" style="font-size: 11px;">—</span>
+                                </div>
+                            </div>
+                            <div id="reqModalSignatureContainer" class="p-1 bg-white border rounded shadow-xs d-none" style="max-width: 130px; flex-shrink: 0;">
+                                <div class="text-muted small text-center" style="font-size: 8px; margin-bottom: 2px;">E-Signature</div>
+                                <img id="reqModalSignature" src="" alt="Digital Signature" style="max-height: 44px; max-width: 120px; object-fit: contain; display: block;">
+                            </div>
+                        </div>
                     </div>
-                    <div class="rdm-section">
-                        <div class="rdm-label">Priority</div>
-                        <div id="reqModalPriority" class="rdm-value"></div>
-                    </div>
-                </div>
-
-                <div class="rdm-section">
-                    <div class="rdm-label">Notes</div>
-                    <div id="reqModalNotes" class="rdm-value">—</div>
                 </div>
             </div>
-            <div class="modal-footer py-2 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-warning btn-sm" id="generateDocBtn" onclick="generateDocumentForRequest()">
-                    <span class="material-icons me-1" style="font-size: 16px;">description</span>
+            <div class="modal-footer py-3 px-4 bg-light border-top d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-warning btn-sm d-flex align-items-center gap-1 px-3 py-2 fw-semibold" id="generateDocBtn" onclick="generateDocumentForRequest()" style="border-radius: 8px;">
+                    <span class="material-icons" style="font-size: 16px;">description</span>
                     Generate Document
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary btn-sm px-3 py-2 fw-semibold" data-bs-dismiss="modal" style="border-radius: 8px;">Close</button>
             </div>
         </div>
     </div>
@@ -588,6 +713,19 @@ function initializeInstructionBanner() {
                     </div>
                 </div>
                 
+                <!-- Dispatch items field (hidden by default) -->
+                <div id="dispatchItemsField" style="display: none;" class="mb-3">
+                    <label class="form-label d-flex align-items-center gap-1 mb-1 fw-semibold">
+                        <span class="material-icons text-primary" style="font-size: 18px;">fact_check</span>
+                        Select Units to Dispatch
+                    </label>
+                    <p class="small text-muted mb-2">Please select exactly <strong class="text-primary" id="dispatchItemsQty">0</strong> unit(s) to dispatch for this request.</p>
+                    <div id="dispatchItemsList" class="border rounded p-2 bg-white" style="max-height: 200px; overflow-y: auto; border: 1px solid #e9ecef!important;">
+                        <!-- Checkboxes will be populated dynamically -->
+                    </div>
+                    <div id="dispatchItemsValidation" class="form-text mt-1 text-danger small" style="display: none;"></div>
+                </div>
+                
                 <div class="alert alert-info">
                     <small>
                         <strong>Note:</strong> This action will notify the requesting municipality and cannot be undone.
@@ -604,34 +742,111 @@ function initializeInstructionBanner() {
 
 <!-- Confirm Return Modal -->
 <div class="modal fade" id="confirmReturnModal" tabindex="-1" aria-labelledby="confirmReturnLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header py-2">
-                <h6 class="modal-title" id="confirmReturnLabel">Confirm Return & Restock</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable confirm-return-dialog" style="width:95vw!important;max-width:95vw!important;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
+            <div class="modal-header py-3 px-4" style="background:linear-gradient(135deg,#1e3c72 0%,#2a5298 100%);color:white;">
+                <h6 class="modal-title d-flex align-items-center gap-2" id="confirmReturnLabel">
+                    <span class="material-icons" style="font-size:20px;">assignment_return</span>
+                    Confirm Return &amp; Assessment
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="alert alert-warning d-flex align-items-start">
-                    <span class="material-icons me-2">assignment_turned_in</span>
-                    <div>
-                        <strong>Confirming a return will restock the resource immediately.</strong>
-                        <div class="small text-muted">This action notifies both provider and borrower and cannot be undone.</div>
+            <div class="modal-body p-4" style="background:#f8f9fa; overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none;">
+                <!-- Summary Cards -->
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="card border-0 shadow-sm h-100" style="border-radius:10px;">
+                            <div class="card-body p-3 text-center">
+                                <div class="text-muted small text-uppercase mb-1" style="font-size:10px;font-weight:700;letter-spacing:.5px;">Request ID</div>
+                                <div id="retModalId" class="fw-bold text-dark">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card border-0 shadow-sm h-100" style="border-radius:10px;">
+                            <div class="card-body p-3 text-center">
+                                <div class="text-muted small text-uppercase mb-1" style="font-size:10px;font-weight:700;letter-spacing:.5px;">Status</div>
+                                <div id="retModalStatus" class="fw-semibold">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm" style="border-radius:10px;">
+                            <div class="card-body p-3">
+                                <div class="row">
+                                    <div class="col-7">
+                                        <div class="text-muted small text-uppercase mb-1" style="font-size:10px;font-weight:700;letter-spacing:.5px;">Resource</div>
+                                        <div id="retModalResource" class="fw-bold text-dark">-</div>
+                                    </div>
+                                    <div class="col-5 text-end">
+                                        <div class="text-muted small text-uppercase mb-1" style="font-size:10px;font-weight:700;letter-spacing:.5px;">Returned Qty</div>
+                                        <div id="retModalQty" class="fw-bold text-primary fs-5">-</div>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="text-muted small text-uppercase mb-1" style="font-size:10px;font-weight:700;letter-spacing:.5px;">Borrower</div>
+                                    <div id="retModalBorrower" class="fw-semibold">-</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="row g-2">
-                    <div class="col-6"><small class="text-muted">Request ID</small><div id="retModalId" class="fw-semibold">—</div></div>
-                    <div class="col-6"><small class="text-muted">Status</small><div id="retModalStatus">—</div></div>
-                    <div class="col-12"><small class="text-muted">Resource</small><div id="retModalResource" class="fw-semibold">—</div></div>
-                    <div class="col-6"><small class="text-muted">Borrower</small><div id="retModalBorrower">—</div></div>
-                    <div class="col-6"><small class="text-muted">Quantity</small><div id="retModalQty">—</div></div>
+
+                <!-- Damage Assessment Section -->
+                <div class="card border-0 shadow-sm mb-3" style="border-radius:10px;border-left:4px solid #fd7e14!important;">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="material-icons text-warning" style="font-size:18px;">manage_search</span>
+                            <strong class="small">Damage Assessment</strong>
+                            <span class="badge bg-warning text-dark ms-auto" style="font-size:10px;">REQUIRED</span>
+                        </div>
+                        <p class="small text-muted mb-3">Inspect the returned items. Items in <strong class="text-success">Good Condition</strong> are restocked to available inventory. <strong class="text-danger">Damaged</strong> items are flagged and held for review &mdash; not restocked.</p>
+                        
+                        <!-- Itemized return checklist (shown only if dispatched items present) -->
+                        <div id="returnItemsField" style="display: none;" class="mb-3">
+                            <label class="form-label small fw-semibold mb-1 d-flex align-items-center gap-1">
+                                <span class="material-icons text-primary" style="font-size: 16px;">fact_check</span>
+                                Unit Check-in Checklist
+                            </label>
+                            <div id="returnItemsList" class="border rounded p-2 bg-white" style="max-height: 180px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; border: 1px solid #e9ecef!important;">
+                                <!-- List of itemized units with select dropdowns or toggles -->
+                            </div>
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label for="retGoodQty" class="form-label small fw-semibold text-success d-flex align-items-center gap-1 mb-1">
+                                    <span class="material-icons" style="font-size:15px;">check_circle</span> Good Condition
+                                </label>
+                                <input type="number" id="retGoodQty" class="form-control form-control-sm" min="0" max="0" value="0">
+                                <div class="form-text" style="font-size:10px;">Goes back to available stock</div>
+                            </div>
+                            <div class="col-6">
+                                <label for="retDamagedQty" class="form-label small fw-semibold text-danger d-flex align-items-center gap-1 mb-1">
+                                    <span class="material-icons" style="font-size:15px;">warning</span> Damaged
+                                </label>
+                                <input type="number" id="retDamagedQty" class="form-control form-control-sm" min="0" max="0" value="0">
+                                <div class="form-text" style="font-size:10px;">Flagged &mdash; NOT restocked</div>
+                            </div>
+                        </div>
+                        <div id="retQtyValidation" class="mt-2 small" style="display:none;"></div>
+                        <div class="mt-3">
+                            <label for="retDamageNotes" class="form-label small fw-semibold mb-1">Damage Notes <span class="text-muted fw-normal">(optional)</span></label>
+                            <textarea id="retDamageNotes" class="form-control form-control-sm" rows="2" placeholder="Describe the condition or damage observed..."></textarea>
+                        </div>
+                    </div>
                 </div>
-                <div class="mt-3 small text-muted">
-                    Tip: Verify the items physically before confirming. You can view full details via "View Details".
+
+                <div class="small text-muted d-flex align-items-center gap-1">
+                    <span class="material-icons" style="font-size:14px;">info</span>
+                    Good + Damaged must equal the total returned quantity shown above.
                 </div>
             </div>
-            <div class="modal-footer py-2">
+            <div class="modal-footer py-2 px-4">
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary btn-sm" id="confirmReturnBtn">Confirm Return</button>
+                <button type="button" class="btn btn-primary btn-sm" id="confirmReturnBtn">
+                    <span class="material-icons me-1" style="font-size:15px;vertical-align:middle;">task_alt</span>Confirm Return
+                </button>
             </div>
         </div>
     </div>
@@ -1144,6 +1359,24 @@ function initializeInstructionBanner() {
                             </div>
                         </div>
                         
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-6">
+                                <label for="returnDateRange" class="form-label fw-bold">
+                                    Expected Return Date
+                                </label>
+                                <input type="text" class="form-control" id="returnDateRange" readonly style="background-color: #f8f9fa;" placeholder="Will be calculated...">
+                                <input type="hidden" id="returnDate" value="">
+                                <small class="text-muted">Auto-calculated from delivery date and duration</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Delivery Mode</label>
+                                <div class="form-control" style="background-color: #f8f9fa;">
+                                    Delivery (Please deliver)
+                                </div>
+                                <input type="hidden" id="transportationMethod" value="Delivery">
+                            </div>
+                        </div>
+                        
                         <div class="mt-3">
                             <label for="deliveryLocation" class="form-label fw-bold">
                                 Delivery Location/Address <span class="text-danger">*</span>
@@ -1226,27 +1459,6 @@ function initializeInstructionBanner() {
                                 <div id="requestorSignaturePreview" class="mt-2" style="display: none;">
                                     <img id="requestorSignatureImg" class="img-fluid border rounded" style="max-height: 50px;">
                                     <button type="button" class="btn btn-sm btn-danger ms-2" onclick="clearSignature('requestor')">Remove</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Return Date (Auto-calculated) -->
-                        <div class="mb-4">
-                            <h6 class="mb-3">Logistics</h6>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label for="returnDate" class="form-label">
-                                        Expected Return Date
-                                    </label>
-                                    <input type="date" class="form-control" id="returnDate" readonly style="background-color: #f8f9fa;">
-                                    <small class="text-muted">Auto-calculated from delivery date and duration</small>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Transportation Method</label>
-                                    <div class="form-control" style="background-color: #f8f9fa;">
-                                        Delivery (Please deliver)
-                                    </div>
-                                    <input type="hidden" id="transportationMethod" value="Delivery">
                                 </div>
                             </div>
                         </div>
@@ -1937,6 +2149,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const expectedDurationNumber = document.getElementById('expectedDurationNumber')?.value;
                 const expectedDurationUnit = document.getElementById('expectedDurationUnit')?.value;
                 const returnDateField = document.getElementById('returnDate');
+                const returnDateRangeField = document.getElementById('returnDateRange');
                 const expectedDurationHidden = document.getElementById('expectedDuration');
                 
                 if (!deliveryDate || !expectedDurationNumber || !expectedDurationUnit || !returnDateField) {
@@ -1978,6 +2191,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 const formattedDate = `${year}-${month}-${day}`;
                 
                 returnDateField.value = formattedDate;
+
+                // Format range like "June 10 - June 13, 2026"
+                const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                const deliveryMonth = months[delivery.getMonth()];
+                const deliveryDay = delivery.getDate();
+                const deliveryYear = delivery.getFullYear();
+
+                const returnMonth = months[returnDate.getMonth()];
+                const returnDay = returnDate.getDate();
+                const returnYear = returnDate.getFullYear();
+
+                let rangeString = "";
+                if (deliveryYear === returnYear) {
+                    rangeString = `${deliveryMonth} ${deliveryDay} - ${returnMonth} ${returnDay}, ${deliveryYear}`;
+                } else {
+                    rangeString = `${deliveryMonth} ${deliveryDay}, ${deliveryYear} - ${returnMonth} ${returnDay}, ${returnYear}`;
+                }
+                if (returnDateRangeField) {
+                    returnDateRangeField.value = rangeString;
+                }
             };
             
             // Add event listeners to auto-calculate return date
@@ -1997,6 +2230,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (expectedDurationUnitField) {
                 expectedDurationUnitField.addEventListener('change', calculateReturnDate);
+            }
+
+            const requestResourceModal = document.getElementById('requestResourceModal');
+            if (requestResourceModal) {
+                requestResourceModal.addEventListener('shown.bs.modal', calculateReturnDate);
             }
             
             // Enforce 11-digit limit on phone number field
@@ -2735,6 +2973,31 @@ function submitRequest() {
         const returnDateField = document.getElementById('returnDate');
         if (returnDateField && returnDate) {
             returnDateField.value = returnDate;
+        }
+
+        // Update range display field
+        const returnDateRangeField = document.getElementById('returnDateRange');
+        if (returnDateRangeField && deliveryDate && returnDate) {
+            const delivery = new Date(deliveryDate);
+            const returnD = new Date(returnDate);
+            if (!isNaN(delivery.getTime()) && !isNaN(returnD.getTime())) {
+                const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                const deliveryMonth = months[delivery.getMonth()];
+                const deliveryDay = delivery.getDate();
+                const deliveryYear = delivery.getFullYear();
+
+                const returnMonth = months[returnD.getMonth()];
+                const returnDay = returnD.getDate();
+                const returnYear = returnD.getFullYear();
+
+                let rangeString = "";
+                if (deliveryYear === returnYear) {
+                    rangeString = `${deliveryMonth} ${deliveryDay} - ${returnMonth} ${returnDay}, ${deliveryYear}`;
+                } else {
+                    rangeString = `${deliveryMonth} ${deliveryDay}, ${deliveryYear} - ${returnMonth} ${returnDay}, ${returnYear}`;
+                }
+                returnDateRangeField.value = rangeString;
+            }
         }
     }
     
@@ -4837,76 +5100,242 @@ function openRequestDetailsById(rawId) {
         const modalEl = document.getElementById('requestDetailsModal');
         if (!modalEl) { console.error('Details modal not found'); return; }
         const id = String(rawId || '').replace(/^REQ-/i, '');
-        const list = Array.isArray(window.requestsData) ? window.requestsData : [];
-        const req = list.find(r => String(r.id) === String(id));
-        if (!req) { console.error('Request not found for id', rawId); return; }
-        // Store for PDF button
-        try { window.currentRequestId = req.id; } catch(_) {}
-        try { currentRequestId = req.id; } catch(_) {}
-        // Store requestGroupId if available
-        try { window.currentRequestGroupId = req.requestGroupId || null; } catch(_) {}
-        // Populate fields
-        const set = (elId, html) => { const el = document.getElementById(elId); if (el) el.innerHTML = html; };
-        
-        // Function to normalize municipality names (consistent with other functions)
-        function normalizeMunicipalityName(name) {
-            let n = name || '';
-            // Remove prefix variants like CDRRMO, MDRRMO, etc.
-            n = n.replace(/^(?:[A-Z]{0,3}DRRMO\s+)/, '');
-            // Remove suffix " DRRMO"
-            n = n.replace(/\s+DRRMO$/, '');
-            // Remove leading descriptors
-            n = n.replace(/^(City of\s+|Municipality of\s+)/i, '');
-            // Remove trailing " City"
-            n = n.replace(/\s+City$/i, '');
-            return n.trim();
-        }
-        
-        set('reqModalId', `REQ-${req.id}`);
-        set('reqModalResource', req.name || 'N/A');
-        set('reqModalFrom', normalizeMunicipalityName(req.municipality || ''));
-        set('reqModalTo', normalizeMunicipalityName(req.toMunicipality || ''));
-        set('reqModalQty', `${req.quantity || 0} ${req.unit || ''}`.trim());
-        const cap = v => { const s = String(v||''); return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; };
-        const formatStatusDisplay = (status) => {
-            const s = String(status||'').toLowerCase();
-            if (s === 'pending_head_approval') return 'Awaiting Head';
-            return cap(status) || 'N/A';
-        };
-        set('reqModalStatus', `<span class="badge bg-${getRequestStatusClass(req.status)}">${formatStatusDisplay(req.status)}</span>`);
-        set('reqModalPriority', `<span class="badge bg-${getPriorityClass(req.priority)}">${req.priority || 'N/A'}</span>`);
-        set('reqModalRequestDate', req.requestDate ? formatDate(req.requestDate) : 'N/A');
-        set('reqModalApproveDate', req.responseDate ? formatDate(req.responseDate) : 'Not approved yet');
-        set('reqModalNotes', req.notes || '—');
-        // Show modal
-        try {
-            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                bootstrap.Modal.getOrCreateInstance(modalEl).show();
-            } else {
-                modalEl.style.display = 'flex';
-                modalEl.classList.add('show');
-                document.body.classList.add('modal-open');
-                const backdrop = document.createElement('div');
-                backdrop.className = 'modal-backdrop fade show';
-                backdrop.id = 'modalBackdrop';
-                document.body.appendChild(backdrop);
-            }
-        } catch (e) { console.error('Failed to open modal', e); }
+        if (!id) { console.error('No request ID provided'); return; }
+
+        // Use absolute path to avoid relative path resolution issues
+        const baseUrl = window.location.origin + '/ConnectDRRM';
+        fetch(`${baseUrl}/config/get_request_details.php?requestId=${id}`, {
+            credentials: 'same-origin'
+        })
+            .then(r => r.text())
+            .then(text => {
+                let res;
+                try { res = JSON.parse(text); } catch(e) {
+                    console.error('Non-JSON response from server:', text);
+                    alert('Server returned an unexpected response. Check the browser console.');
+                    return;
+                }
+                if (!res || !res.success || !res.data) {
+                    console.error('Failed to fetch request details:', res);
+                    alert('Error: ' + (res?.error?.message || 'Could not load request details.'));
+                    return;
+                }
+                const req = res.data;
+
+                // Store for PDF button
+                try { window.currentRequestId = req.requestID; } catch(_) {}
+                try { currentRequestId = req.requestID; } catch(_) {}
+                // Store requestGroupId if available
+                try { window.currentRequestGroupId = req.requestGroupId || null; } catch(_) {}
+                
+                // Populate fields
+                const set = (elId, html) => { const el = document.getElementById(elId); if (el) el.innerHTML = html; };
+                
+                // Function to normalize municipality names (consistent with other functions)
+                function normalizeMunicipalityName(name) {
+                    let n = name || '';
+                    n = n.replace(/^(?:[A-Z]{0,3}DRRMO\s+)/, '');
+                    n = n.replace(/\s+DRRMO$/, '');
+                    n = n.replace(/^(City of\s+|Municipality of\s+)/i, '');
+                    n = n.replace(/\s+City$/i, '');
+                    return n.trim();
+                }
+                
+                set('reqModalId', `REQ-${req.requestID}`);
+                set('reqModalResource', req.resourceName || 'N/A');
+                set('reqModalFrom', normalizeMunicipalityName(req.fromMunicipality || ''));
+                set('reqModalTo', normalizeMunicipalityName(req.toMunicipality || ''));
+                set('reqModalQty', `${req.quantity || 0} ${req.unit || ''}`.trim());
+                const cap = v => { const s = String(v||''); return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; };
+                const formatStatusDisplay = (status) => {
+                    const s = String(status||'').toLowerCase();
+                    if (s === 'pending_head_approval') return 'Awaiting Head';
+                    return cap(status) || 'N/A';
+                };
+                set('reqModalStatus', `<span class="badge bg-${getRequestStatusClass(req.status)}">${formatStatusDisplay(req.status)}</span>`);
+                set('reqModalPriority', `<span class="badge bg-${getPriorityClass(req.priority)}">${req.priority || 'N/A'}</span>`);
+                set('reqModalRequestDate', req.requestDate ? formatDate(req.requestDate) : 'N/A');
+                
+                let approveDateText = 'Not approved yet';
+                if (req.responseDate) {
+                    approveDateText = formatDate(req.responseDate);
+                } else {
+                    const lowerStatus = String(req.status || '').toLowerCase();
+                    if (lowerStatus !== 'pending' && lowerStatus !== 'pending_head_approval' && lowerStatus !== 'group_approved_pending' && lowerStatus !== 'group_rejected_pending') {
+                        approveDateText = 'N/A';
+                    }
+                }
+                set('reqModalApproveDate', approveDateText);
+                set('reqModalNotes', req.notes || '—');
+
+                // ── Dispatched Units Details ─────────────────────────────────
+                const dispSec = document.getElementById('reqModalDispatchedSection');
+                const dispList = document.getElementById('reqModalDispatchedList');
+                if (dispSec && dispList) {
+                    const dispatched = req.dispatchedItems || [];
+                    if (dispatched.length > 0) {
+                        dispSec.classList.remove('d-none');
+                        dispList.innerHTML = dispatched.map(item => `
+                            <div class="d-flex justify-content-between align-items-center p-2 rounded border bg-white shadow-sm" style="border: 1px solid #e9ecef!important;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="material-icons text-primary" style="font-size: 16px;">tag</span>
+                                    <span class="fw-bold text-dark">${item.uniqueIdentifier}</span>
+                                    <span class="text-muted small ms-2">Loc: ${item.storageLocation || 'N/A'}</span>
+                                </div>
+                                <div>
+                                    <span class="badge bg-${item.status === 'Available' ? 'success' : (item.status === 'In Use' ? 'info' : 'warning')}">${item.status}</span>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        dispSec.classList.add('d-none');
+                        dispList.innerHTML = '';
+                    }
+                }
+
+                // ── Damage Assessment card ─────────────────────────────────────
+                const damageSec = document.getElementById('reqModalDamageSection');
+                if (damageSec) {
+                    const lowerSt    = String(req.status || '').toLowerCase();
+                    const damagedQty = parseInt(req.damagedQty) || 0;
+                    const hasDamage  = (lowerSt === 'returned');
+                    if (hasDamage) {
+                        damageSec.classList.remove('d-none');
+                        const totalQty = parseInt(req.quantity) || 0;
+                        const goodQty  = totalQty - damagedQty;
+                        const setDmg = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+                        setDmg('reqModalTotalQty',    totalQty);
+                        setDmg('reqModalGoodQty',     goodQty);
+                        setDmg('reqModalDamagedQty',  damagedQty);
+                        setDmg('reqModalDamageNotes', req.damageAssessment || 'Good condition, no damage.');
+                    } else {
+                        damageSec.classList.add('d-none');
+                    }
+                }
+
+                // Populate approval method if request has been approved, rejected, bypassed, or evaluated
+                const methodSec = document.getElementById('reqModalApprovalMethodSection');
+                if (methodSec) {
+                    const lowerStatus = String(req.status || '').toLowerCase();
+                    const hasHeadStatus = !!req.headApprovalStatus;
+                    const isFinalEvaluated = (lowerStatus === 'approved' || lowerStatus === 'rejected' || lowerStatus === 'fulfilled' || lowerStatus === 'received' || lowerStatus === 'borrowed' || lowerStatus === 'returned');
+                    
+                    if (hasHeadStatus || isFinalEvaluated) {
+                        methodSec.classList.remove('d-none');
+                        methodSec.style.display = 'block';
+                        
+                        let label = 'Authorized';
+                        let badgeClass = 'bg-success';
+                        let icon = 'verified';
+                        let borderColor = '#198754';
+                        
+                        let approverName = '';
+                        let approverTitle = '';
+                        let approverSignature = '';
+                        
+                        if (isFinalEvaluated) {
+                            const isApproved = (lowerStatus !== 'rejected');
+                            label = isApproved ? 'Approved by Admin' : 'Rejected by Admin';
+                            badgeClass = isApproved ? 'bg-success' : 'bg-danger';
+                            icon = isApproved ? 'verified' : 'cancel';
+                            borderColor = isApproved ? '#198754' : '#dc3545';
+                            
+                            approverName = req.approvingAuthority || req.headApprovedBy || 'Authorized Officer';
+                            approverTitle = req.approverTitle || 'DRRMO Staff';
+                            approverSignature = req.approverSignature || '';
+                        } else {
+                            const isApproved = req.headApprovalStatus === 'approved';
+                            label = isApproved ? 'Approved by Head' : 'Bypassed by Head';
+                            badgeClass = isApproved ? 'bg-success' : 'bg-warning text-dark';
+                            icon = isApproved ? 'verified' : 'fast_forward';
+                            borderColor = isApproved ? '#198754' : '#ffc107';
+                            
+                            approverName = req.headApprovedBy || req.approvingAuthority || 'DRRMO Head';
+                            approverTitle = req.approverTitle || (isApproved ? 'DRRMO Head' : 'DRRMO Staff');
+                            approverSignature = req.approverSignature || '';
+                        }
+                        
+                        methodSec.style.borderLeft = `4px solid ${borderColor}`;
+                        
+                        // Badge
+                        const badgeEl = document.getElementById('reqModalApprovalBadge');
+                        if (badgeEl) {
+                            badgeEl.innerHTML = `<span class="badge ${badgeClass} d-flex align-items-center gap-1"><span class="material-icons" style="font-size: 12px;">${icon}</span> ${label}</span>`;
+                        }
+                        
+                        // Authorized By Label
+                        const labelEl = document.getElementById('reqModalAuthorizedLabel');
+                        if (labelEl) {
+                            labelEl.innerText = (lowerStatus === 'rejected') ? 'Rejected By' : 'Approved By';
+                        }
+                        
+                        // Authorized By Name
+                        const nameEl = document.getElementById('reqModalAuthorizedName');
+                        if (nameEl) {
+                            nameEl.innerText = approverName;
+                        }
+                        
+                        // Authorized By Title
+                        const titleEl = document.getElementById('reqModalAuthorizedTitle');
+                        if (titleEl) {
+                            titleEl.innerText = approverTitle;
+                        }
+                        
+                        // Signature
+                        const sigContainer = document.getElementById('reqModalSignatureContainer');
+                        const sigImg = document.getElementById('reqModalSignature');
+                        if (sigContainer && sigImg) {
+                            if (approverSignature && approverSignature.trim() !== '') {
+                                sigImg.src = approverSignature;
+                                sigContainer.classList.remove('d-none');
+                                sigContainer.classList.add('d-inline-block');
+                            } else {
+                                sigContainer.classList.add('d-none');
+                                sigContainer.classList.remove('d-inline-block');
+                                sigImg.src = '';
+                            }
+                        }
+                    } else {
+                        methodSec.classList.add('d-none');
+                        methodSec.style.display = 'none';
+                    }
+                }
+                
+                // Show modal
+                try {
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                    } else {
+                        modalEl.style.display = 'flex';
+                        modalEl.classList.add('show');
+                        document.body.classList.add('modal-open');
+                        const backdrop = document.createElement('div');
+                        backdrop.className = 'modal-backdrop fade show';
+                        backdrop.id = 'modalBackdrop';
+                        document.body.appendChild(backdrop);
+                    }
+                } catch (e) { console.error('Failed to open modal', e); }
+            })
+            .catch(err => {
+                console.error('Fetch request details error:', err);
+                alert('Could not load request details. Please check your connection or try refreshing the page.');
+            });
     } catch (e) { console.error('openRequestDetailsById error', e); }
 }
 
 // Delegate click for all dynamically rendered view buttons
-if (!window.__boundViewDetailsDelegation) {
-    window.__boundViewDetailsDelegation = true;
-    document.addEventListener('click', function(e){
-        const btn = e.target && e.target.closest && e.target.closest('.btn-view-details');
-        if (!btn) return;
-        e.preventDefault();
-        e.stopPropagation();
-        const id = btn.getAttribute('data-request-id');
-        openRequestDetailsById(id);
-    });
+if (window.__viewDetailsHandler) {
+    document.removeEventListener('click', window.__viewDetailsHandler);
 }
+window.__viewDetailsHandler = function(e) {
+    const btn = e.target && e.target.closest && e.target.closest('.btn-view-details');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const id = btn.getAttribute('data-request-id');
+    openRequestDetailsById(id);
+};
+document.addEventListener('click', window.__viewDetailsHandler);
 
 // Format date for display
 function formatDate(dateString) {
@@ -4956,9 +5385,10 @@ function displayResources(resources) {
     
     tbody.innerHTML = resources.map((resource, index) => {
         const qty = Number(resource.availableStock || 0);
-        const isAvailable = qty > 0;
-        const statusLabel = isAvailable ? 'Available' : 'Unavailable';
-        const statusClass = isAvailable ? 'success' : 'danger';
+        const damaged = Number(resource.damagedStock || 0);
+        const isAvailable = qty > 0 && !(qty === 1 && damaged === 1);
+        const statusLabel = isAvailable ? 'Available' : (damaged > 0 ? 'Damaged / Repairing' : 'Unavailable');
+        const statusClass = isAvailable ? 'success' : (damaged > 0 ? 'warning text-dark' : 'danger');
         const rawMunicipality = resource.municipality || '';
         const normalizedMunicipality = normalizeMunicipalityName(rawMunicipality);
         const municipality = rawMunicipality.replace(/"/g, '&quot;');
@@ -4974,6 +5404,11 @@ function displayResources(resources) {
             <td title="${qty} ${resource.unit || ''}">${qty} ${resource.unit || ''}</td>
             <td>
                 <span class="badge bg-${statusClass}" title="${statusLabel}">${statusLabel}</span>
+                ${(!isAvailable && resource.nextAvailableDate) ? `
+                    <div class="text-muted mt-1" style="font-size: 0.72rem; line-height: 1.1; font-weight: 500;">
+                        Available: ${new Date(resource.nextAvailableDate).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'})}
+                    </div>
+                ` : ''}
             </td>
             <td class="text-center">
                 <input type="checkbox" 

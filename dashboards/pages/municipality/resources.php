@@ -64,7 +64,15 @@ try {
     $sql = "
         SELECT 
             r.*,
-            d.name as drrmoName
+            d.name as drrmoName,
+            (
+                SELECT MIN(req.returnDate)
+                FROM requests req
+                WHERE req.resourceID = r.resourceID
+                  AND req.status IN ('approved', 'fulfilled', 'return pending')
+                  AND req.returnedAt IS NULL
+                  AND req.returnDate IS NOT NULL
+            ) AS nextAvailableDate
         FROM resources r
         JOIN drrmo d ON r.drrmoID = d.drrmoID
         ORDER BY d.name, r.resourceName
@@ -87,10 +95,12 @@ try {
             'minQuantity' => $resource['minimumStock'], // For display
             'totalStock' => $resource['totalStock'] ?? 0, // For editing
             'availableStock' => $resource['availableStock'], // For editing
+            'damagedStock' => $resource['damagedStock'] ?? 0, // Damaged items
             'minimumStock' => $resource['minimumStock'] ?? 0, // For editing
             'unit' => $resource['unit'] ?? '', // For editing
             'description' => $resource['description'],
             'storageLocation' => $resource['storageLocation'] ?? null, // For editing
+            'nextAvailableDate' => $resource['nextAvailableDate'] ?? null,
             'lastUpdated' => $resource['updatedAt'] ?? date('Y-m-d H:i:s')
         ];
     }
@@ -218,6 +228,7 @@ window.availableSubcategories = <?php echo json_encode($subcategories ?? []); ?>
                                             <option value="">All Status</option>
                                             <option value="available">Available</option>
                                             <option value="unavailable">Unavailable</option>
+                                            <option value="repairing">Damaged / Repairing</option>
                                         </select>
                                     </div>
                                     <div class="filter-group">
@@ -242,7 +253,8 @@ window.availableSubcategories = <?php echo json_encode($subcategories ?? []); ?>
                                             <th>Resource</th>
                                             <th>Municipality</th>
                                             <th>Subcategory</th>
-                                            <th>Quantity</th>
+                                            <th>Available Qty</th>
+                                            <th>Damaged</th>
                                             <th>Status</th>
                                             <th>Last Updated</th>
                                         </tr>
@@ -316,7 +328,8 @@ window.availableSubcategories = <?php echo json_encode($subcategories ?? []); ?>
                     <tr>
                         <th>Resource Name</th>
                         <th>Subcategory</th>
-                        <th>Quantity</th>
+                        <th>Available Qty</th>
+                        <th>Damaged</th>
                         <th>Status</th>
                         <th>Last Updated</th>
                         <th class="actions-column">Actions</th>
@@ -341,7 +354,10 @@ window.availableSubcategories = <?php echo json_encode($subcategories ?? []); ?>
             <div class="modal-title">
                 <span class="material-icons">inventory</span>
                 <div>
-                    <h2 id="modalTitle">Add New Resource</h2>
+                    <h2 id="modalTitle" class="d-flex align-items-center gap-2">
+                        <span id="modalTitleText">Add New Resource</span>
+                        <span id="modalStatusBadge" class="status-badge" style="display: none; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; font-weight: 600; vertical-align: middle; line-height: 1.5;"></span>
+                    </h2>
                     <p id="modalSubtitle">Complete the form below to add a new resource to your inventory</p>
                 </div>
             </div>
@@ -358,16 +374,16 @@ window.availableSubcategories = <?php echo json_encode($subcategories ?? []); ?>
                         Basic Information
                     </h3>
                     
+                    <div class="form-group">
+                        <label for="resourceName">
+                            <span class="material-icons">label</span>
+                            Resource Name
+                        </label>
+                        <input type="text" id="resourceName" name="name" placeholder="Enter resource name" required>
+                        <small class="form-help">Enter a clear, descriptive name for the resource</small>
+                    </div>
+
                     <div class="form-row">
-                        <div class="form-group">
-                            <label for="resourceName">
-                                <span class="material-icons">label</span>
-                                Resource Name
-                            </label>
-                            <input type="text" id="resourceName" name="name" placeholder="Enter resource name" required>
-                            <small class="form-help">Enter a clear, descriptive name for the resource</small>
-                        </div>
-                        
                         <div class="form-group">
                             <label for="resourceCategory">
                                 <span class="material-icons">category</span>
@@ -382,9 +398,7 @@ window.availableSubcategories = <?php echo json_encode($subcategories ?? []); ?>
                                 <option value="add_new_category">+ Add New Category</option>
                             </select>
                         </div>
-                    </div>
-                    
-                    <div class="form-row">
+
                         <div class="form-group">
                             <label for="resourceSubcategory">
                                 <span class="material-icons">subdirectory_arrow_right</span>
@@ -427,14 +441,14 @@ window.availableSubcategories = <?php echo json_encode($subcategories ?? []); ?>
                         Inventory Management
                     </h3>
                     
-                    <div class="form-row">
+                    <div class="form-row-three">
                         <div class="form-group">
                             <label for="totalStock">
                                 <span class="material-icons">inventory</span>
                                 Total Stock
                             </label>
                             <input type="number" id="totalStock" name="totalStock" min="0" placeholder="0" required>
-                            <small class="form-help">Total quantity of this resource in inventory</small>
+                            <small class="form-help">Total stock in inventory</small>
                         </div>
                         
                         <div class="form-group">
@@ -443,7 +457,16 @@ window.availableSubcategories = <?php echo json_encode($subcategories ?? []); ?>
                                 Available Stock
                             </label>
                             <input type="number" id="availableStock" name="availableStock" min="0" placeholder="0" required>
-                            <small class="form-help">Currently available quantity for use</small>
+                            <small class="form-help">Available quantity for use</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="damagedStock">
+                                <span class="material-icons">report_problem</span>
+                                Damaged Stock
+                            </label>
+                            <input type="number" id="damagedStock" name="damagedStock" min="0" placeholder="0" value="0">
+                            <small class="form-help">Damaged stock under repair</small>
                         </div>
                     </div>
                     
@@ -482,20 +505,45 @@ window.availableSubcategories = <?php echo json_encode($subcategories ?? []); ?>
                     </div>
                 </div>
 
-                <!-- Location & Storage Section -->
+                <!-- Storage & Identification Section -->
                 <div class="form-section">
                     <h3 class="section-title">
                         <span class="material-icons">location_on</span>
-                        Storage Information
+                        Storage & Identification
                     </h3>
                     
-                    <div class="form-group">
-                        <label for="storageLocation">
-                            <span class="material-icons">warehouse</span>
-                            Storage Location
-                        </label>
-                        <input type="text" id="storageLocation" name="storageLocation" placeholder="e.g., Warehouse A, Room 101, Central Storage">
-                        <small class="form-help">Where is this resource stored?</small>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="storageLocation">
+                                <span class="material-icons">warehouse</span>
+                                Storage Location
+                            </label>
+                            <input type="text" id="storageLocation" name="storageLocation" placeholder="e.g., Warehouse A, Room 101">
+                            <small class="form-help">Where is this resource stored?</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="plateNumber">
+                                <span class="material-icons">badge</span>
+                                Plate No. / Serial No. / ID
+                            </label>
+                            <input type="text" id="plateNumber" name="plateNumber" placeholder="e.g., ABC-1234, SN-98765">
+                            <small class="form-help">Vehicle plate number, serial number, or unique identifier</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Itemized Units Details (Accordion sub-form) -->
+                <div class="form-section" id="itemizedUnitsSection" style="display: none; border-top: 1px dashed var(--border-color); padding-top: var(--spacing-lg);">
+                    <h3 class="section-title">
+                        <span class="material-icons">list_alt</span>
+                        Itemized Units Details
+                    </h3>
+                    <small class="form-help" style="display: block; margin-top: -6px; margin-bottom: 12px; color: var(--text-muted);">
+                        Specify unique identifiers (e.g. Plate Number, Serial Number) and conditions for each individual unit.
+                    </small>
+                    <div id="itemizedUnitsList" style="display: flex; flex-direction: column; gap: var(--spacing-md);">
+                        <!-- Dynamically populated by JS based on Total Stock -->
                     </div>
                 </div>
 
